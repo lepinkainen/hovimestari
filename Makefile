@@ -2,7 +2,7 @@
 
 # Build the application
 build:
-	go build -o hovimestari ./cmd/stevens
+	go build -o hovimestari ./cmd/hovimestari
 
 # Clean build artifacts
 clean:
