@@ -97,12 +97,6 @@ func (g *Generator) GenerateDailyBrief(ctx context.Context, daysAhead int) (stri
 		fmt.Printf("Warning: Failed to get weather forecasts: %v\n", err)
 	}
 
-	// Debug: Print out the forecasts found
-	fmt.Println("Weather forecasts found:")
-	for dateStr, forecast := range weatherForecasts {
-		fmt.Printf("  %s: %s\n", dateStr, forecast)
-	}
-
 	// Check for forecast changes
 	forecastChanges, err := weatherimporter.DetectForecastChanges(g.store, now, endDate, g.cfg.LocationName)
 	if err != nil {
@@ -118,14 +112,10 @@ func (g *Generator) GenerateDailyBrief(ctx context.Context, daysAhead int) (stri
 
 	// Add today's weather if available
 	todayStr := now.Format("2006-01-02")
-	fmt.Printf("Today's date string: %s\n", todayStr)
-	fmt.Printf("Available forecast dates: %v\n", weatherForecasts)
 	if forecast, ok := weatherForecasts[todayStr]; ok {
 		userInfo["Weather"] = forecast
-		fmt.Printf("Found today's forecast: %s\n", forecast)
 	} else {
 		userInfo["Weather"] = "Säätietoja ei saatavilla"
-		fmt.Printf("No forecast found for today\n")
 	}
 
 	// Add future weather forecasts if available

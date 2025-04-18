@@ -65,30 +65,15 @@ func GetLatestForecasts(s *store.Store, startDate, endDate time.Time, location s
 	// Adjust the start date to include the entire day in UTC
 	utcStartDate := startDate.UTC().Truncate(24 * time.Hour)
 	utcEndDate := endDate.UTC().Add(24 * time.Hour).Truncate(24 * time.Hour)
-	fmt.Printf("Date range for memories: %s to %s\n", utcStartDate.Format(time.RFC3339), utcEndDate.Format(time.RFC3339))
 
 	memories, err := s.GetRelevantMemories(utcStartDate, utcEndDate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get weather memories: %w", err)
 	}
 
-	// Debug: Print all memories
-	fmt.Println("All memories from store:")
-	for _, memory := range memories {
-		var dateStr string
-		if memory.RelevanceDate != nil {
-			dateStr = memory.RelevanceDate.Format("2006-01-02")
-		} else {
-			dateStr = "nil"
-		}
-		fmt.Printf("  ID: %d, Source: %s, Date: %s, Content: %s\n",
-			memory.ID, memory.Source, dateStr, memory.Content)
-	}
-
 	// Group forecasts by date, keeping only the most recent for each date
 	latestForecasts := make(map[string]store.Memory)
 	source := fmt.Sprintf("%s:%s", SourcePrefix, location)
-	fmt.Printf("Looking for source: %s\n", source)
 
 	for _, memory := range memories {
 		// Skip non-weather memories or memories for other locations
@@ -104,7 +89,6 @@ func GetLatestForecasts(s *store.Store, startDate, endDate time.Time, location s
 		if !exists || memory.CreatedAt.After(existing.CreatedAt) {
 			// This is a newer forecast, replace the existing one
 			latestForecasts[dateStr] = memory
-			fmt.Printf("Found forecast for %s: %s\n", dateStr, memory.Content)
 		}
 	}
 
