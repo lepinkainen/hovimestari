@@ -1,0 +1,6 @@
+{
+  "db_path": "memories.db",
+  "gemini_api_key": "YOUR_GEMINI_API_KEY",
+  "webcal_url": "webcal://p12-caldav.icloud.com/published/2/MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI",
+  "output_format": "cli"
+}
