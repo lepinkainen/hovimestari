@@ -14,12 +14,13 @@ import (
 
 // Importer handles importing calendar events from a WebCal URL
 type Importer struct {
-	store     *store.Store
-	webCalURL string
+	store        *store.Store
+	webCalURL    string
+	calendarName string
 }
 
 // NewImporter creates a new calendar importer
-func NewImporter(store *store.Store, webCalURL string) *Importer {
+func NewImporter(store *store.Store, webCalURL string, calendarName string) *Importer {
 	// Convert webcal:// to https:// if needed
 	url := webCalURL
 	if strings.HasPrefix(url, "webcal://") {
@@ -27,8 +28,9 @@ func NewImporter(store *store.Store, webCalURL string) *Importer {
 	}
 
 	return &Importer{
-		store:     store,
-		webCalURL: url,
+		store:        store,
+		webCalURL:    url,
+		calendarName: calendarName,
 	}
 }
 
@@ -71,8 +73,9 @@ func (i *Importer) Import(ctx context.Context, daysAhead int) error {
 		// Use the event start time as the relevance date
 		relevanceDate := event.Start
 
-		// Add the memory to the database
-		_, err := i.store.AddMemory(content, relevanceDate, "calendar")
+		// Add the memory to the database with the calendar name in the source
+		source := fmt.Sprintf("calendar:%s", i.calendarName)
+		_, err := i.store.AddMemory(content, relevanceDate, source)
 		if err != nil {
 			return fmt.Errorf("failed to add calendar event to database: %w", err)
 		}

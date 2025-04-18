@@ -4,6 +4,14 @@ Hovimestari is a personal AI butler assistant inspired by the article ["How I Ma
 
 The name "Hovimestari" means "Butler" in Finnish, and this assistant generates its briefs in Finnish.
 
+## Features
+
+- **Calendar Integration**: Import events from multiple iCloud/WebCal calendars
+- **Weather Forecasts**: Automatically fetches weather data from MET Norway API
+- **Family Information**: Keeps track of family members and their birthdays
+- **Daily Briefs**: Generates personalized daily briefs in Finnish with a formal butler tone
+- **Memory Storage**: Stores all information in a simple SQLite database
+
 ## Overview
 
 Hovimestari is a simple yet powerful personal assistant that:
@@ -130,10 +138,36 @@ The configuration is stored in `config.json` by default. You can specify a diffe
 {
   "db_path": "memories.db",
   "gemini_api_key": "YOUR_GEMINI_API_KEY",
-  "webcal_url": "YOUR_WEBCAL_URL",
+  "location_name": "Helsinki",
+  "latitude": 60.1699,
+  "longitude": 24.9384,
+  "timezone": "Europe/Helsinki",
+  "calendars": [
+    {
+      "name": "Family Calendar",
+      "url": "webcal://example.com/calendar.ics"
+    }
+  ],
+  "family": [
+    {
+      "name": "Matti",
+      "birthday": "1980-05-15"
+    }
+  ],
   "output_format": "cli"
 }
 ```
+
+### Configuration Fields
+
+- **db_path**: Path to the SQLite database file
+- **gemini_api_key**: Your Google Gemini API key
+- **location_name**: Name of your location (e.g., "Helsinki")
+- **latitude** and **longitude**: Geographic coordinates for weather forecasts
+- **timezone**: Your timezone in IANA format (e.g., "Europe/Helsinki")
+- **calendars**: List of calendars to import events from
+- **family**: List of family members with optional birthdays
+- **output_format**: Output format (currently only "cli" is supported)
 
 ## Future Enhancements
 

@@ -46,10 +46,35 @@ func (c *GeminiClient) GenerateBrief(ctx context.Context, memories []string, use
 
 	// Add user information if available
 	if len(userInfo) > 0 {
-		promptBuilder.WriteString("User Information:\n")
-		for key, value := range userInfo {
-			promptBuilder.WriteString(fmt.Sprintf("- %s: %s\n", key, value))
+		// Extract specific information for special handling
+		date := userInfo["Date"]
+		location := userInfo["Location"]
+		family := userInfo["Family"]
+		weather := userInfo["Weather"]
+		birthdays := userInfo["Birthdays"]
+
+		promptBuilder.WriteString("Context Information:\n")
+
+		if date != "" {
+			promptBuilder.WriteString(fmt.Sprintf("- Current Date: %s\n", date))
 		}
+
+		if location != "" {
+			promptBuilder.WriteString(fmt.Sprintf("- Location: %s\n", location))
+		}
+
+		if family != "" {
+			promptBuilder.WriteString(fmt.Sprintf("- Family Members: %s\n", family))
+		}
+
+		if weather != "" {
+			promptBuilder.WriteString(fmt.Sprintf("- Weather Forecast: %s\n", weather))
+		}
+
+		if birthdays != "" {
+			promptBuilder.WriteString(fmt.Sprintf("- Birthdays Today: %s\n", birthdays))
+		}
+
 		promptBuilder.WriteString("\n")
 	}
 
@@ -62,7 +87,11 @@ func (c *GeminiClient) GenerateBrief(ctx context.Context, memories []string, use
 		promptBuilder.WriteString("\n")
 	}
 
-	promptBuilder.WriteString("Please generate a concise, well-organized daily brief in Finnish. Use a formal, butler-like tone. Include only relevant information and organize it in a clear, readable format. If there are calendar events, list them chronologically. If there are tasks or reminders, prioritize them appropriately.\n")
+	promptBuilder.WriteString("Please generate a concise, well-organized daily brief in Finnish. Use a formal, butler-like tone as if you were a professional butler addressing the family. Begin with a proper greeting that includes the current date. Include the weather forecast near the beginning of the brief. If there are birthdays today, make sure to highlight them prominently with congratulations.\n\n")
+
+	promptBuilder.WriteString("Organize the information in a clear, readable format with appropriate sections. If there are calendar events, list them chronologically. If there are tasks or reminders, prioritize them appropriately.\n\n")
+
+	promptBuilder.WriteString("End the brief with a respectful closing remark, as a butler would.\n")
 
 	// Generate the response
 	resp, err := c.model.GenerateContent(ctx, genai.Text(promptBuilder.String()))
