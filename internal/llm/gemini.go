@@ -51,6 +51,8 @@ func (c *GeminiClient) GenerateBrief(ctx context.Context, memories []string, use
 		location := userInfo["Location"]
 		family := userInfo["Family"]
 		weather := userInfo["Weather"]
+		futureWeather := userInfo["FutureWeather"]
+		weatherChanges := userInfo["WeatherChanges"]
 		birthdays := userInfo["Birthdays"]
 
 		promptBuilder.WriteString("Context Information:\n")
@@ -68,7 +70,23 @@ func (c *GeminiClient) GenerateBrief(ctx context.Context, memories []string, use
 		}
 
 		if weather != "" {
-			promptBuilder.WriteString(fmt.Sprintf("- Weather Forecast: %s\n", weather))
+			promptBuilder.WriteString(fmt.Sprintf("- Today's Weather: %s\n", weather))
+		}
+
+		if futureWeather != "" {
+			promptBuilder.WriteString("- Upcoming Weather Forecasts:\n")
+			forecasts := strings.Split(futureWeather, "\n")
+			for _, forecast := range forecasts {
+				promptBuilder.WriteString(fmt.Sprintf("  * %s\n", forecast))
+			}
+		}
+
+		if weatherChanges != "" {
+			promptBuilder.WriteString("- Weather Forecast Changes:\n")
+			changes := strings.Split(weatherChanges, "\n")
+			for _, change := range changes {
+				promptBuilder.WriteString(fmt.Sprintf("  * %s\n", change))
+			}
 		}
 
 		if birthdays != "" {
@@ -87,7 +105,7 @@ func (c *GeminiClient) GenerateBrief(ctx context.Context, memories []string, use
 		promptBuilder.WriteString("\n")
 	}
 
-	promptBuilder.WriteString("Please generate a concise, well-organized daily brief in Finnish. Use a formal, butler-like tone as if you were a professional butler addressing the family. Begin with a proper greeting that includes the current date. Include the weather forecast near the beginning of the brief. If there are birthdays today, make sure to highlight them prominently with congratulations.\n\n")
+	promptBuilder.WriteString("Please generate a concise, well-organized daily brief in Finnish. Use a formal, butler-like tone as if you were a professional butler addressing the family. Begin with a proper greeting that includes the current date. Include today's weather forecast near the beginning of the brief. If there are upcoming weather forecasts, include them in a separate section. If there are changes to weather forecasts compared to previous forecasts, mention these changes. If there are birthdays today, make sure to highlight them prominently with congratulations.\n\n")
 
 	promptBuilder.WriteString("Organize the information in a clear, readable format with appropriate sections. If there are calendar events, list them chronologically. If there are tasks or reminders, prioritize them appropriately.\n\n")
 

@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/shrike/hovimestari/internal/config"
+	weatherimporter "github.com/shrike/hovimestari/internal/importer/weather"
 	"github.com/shrike/hovimestari/internal/llm"
 	"github.com/shrike/hovimestari/internal/store"
-	"github.com/shrike/hovimestari/internal/weather"
 )
 
 // Generator handles generating briefs based on memories
@@ -90,12 +90,23 @@ func (g *Generator) GenerateDailyBrief(ctx context.Context, daysAhead int) (stri
 		familyNames = append(familyNames, member.Name)
 	}
 
-	// Get weather forecast
-	weatherForecast, err := weather.GetForecast(g.cfg.Latitude, g.cfg.Longitude)
+	// Get weather forecasts from memories
+	// Use the already defined now and endDate variables
+	weatherForecasts, err := weatherimporter.GetLatestForecasts(g.store, now, endDate, g.cfg.LocationName)
 	if err != nil {
-		// If weather fetching fails, just log the error and continue without weather
-		weatherForecast = "Säätietoja ei saatavilla"
-		fmt.Printf("Warning: Failed to fetch weather: %v\n", err)
+		fmt.Printf("Warning: Failed to get weather forecasts: %v\n", err)
+	}
+
+	// Debug: Print out the forecasts found
+	fmt.Println("Weather forecasts found:")
+	for dateStr, forecast := range weatherForecasts {
+		fmt.Printf("  %s: %s\n", dateStr, forecast)
+	}
+
+	// Check for forecast changes
+	forecastChanges, err := weatherimporter.DetectForecastChanges(g.store, now, endDate, g.cfg.LocationName)
+	if err != nil {
+		fmt.Printf("Warning: Failed to detect forecast changes: %v\n", err)
 	}
 
 	// Add user information
@@ -103,7 +114,41 @@ func (g *Generator) GenerateDailyBrief(ctx context.Context, daysAhead int) (stri
 		"Date":     formattedDate,
 		"Location": g.cfg.LocationName,
 		"Family":   strings.Join(familyNames, ", "),
-		"Weather":  weatherForecast,
+	}
+
+	// Add today's weather if available
+	todayStr := now.Format("2006-01-02")
+	fmt.Printf("Today's date string: %s\n", todayStr)
+	fmt.Printf("Available forecast dates: %v\n", weatherForecasts)
+	if forecast, ok := weatherForecasts[todayStr]; ok {
+		userInfo["Weather"] = forecast
+		fmt.Printf("Found today's forecast: %s\n", forecast)
+	} else {
+		userInfo["Weather"] = "Säätietoja ei saatavilla"
+		fmt.Printf("No forecast found for today\n")
+	}
+
+	// Add future weather forecasts if available
+	var futureWeather []string
+	for i := 1; i <= daysAhead; i++ {
+		futureDate := now.AddDate(0, 0, i)
+		dateStr := futureDate.Format("2006-01-02")
+		if forecast, ok := weatherForecasts[dateStr]; ok {
+			futureWeather = append(futureWeather, forecast)
+		}
+	}
+
+	if len(futureWeather) > 0 {
+		userInfo["FutureWeather"] = strings.Join(futureWeather, "\n")
+	}
+
+	// Add forecast changes if any
+	if len(forecastChanges) > 0 {
+		var changes []string
+		for _, change := range forecastChanges {
+			changes = append(changes, change)
+		}
+		userInfo["WeatherChanges"] = strings.Join(changes, "\n")
 	}
 
 	// Add birthdays if any

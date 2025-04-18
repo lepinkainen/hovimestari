@@ -49,6 +49,16 @@ type MetNoForecast struct {
 	} `json:"properties"`
 }
 
+// DailyForecast represents a summarized forecast for a single day
+type DailyForecast struct {
+	Date        time.Time
+	MinTemp     float64
+	MaxTemp     float64
+	SymbolCode  string
+	Description string
+	WindSpeed   float64
+}
+
 // WeatherSymbols maps MET Norway symbol codes to Finnish descriptions
 var WeatherSymbols = map[string]string{
 	"clearsky":                    "selkeää",
@@ -184,4 +194,152 @@ func GetForecast(latitude, longitude float64) (string, error) {
 	// Format the forecast
 	forecastText := fmt.Sprintf("Sää tänään: %s, lämpötila %.0f-%.0f°C", weatherDesc, minTemp, maxTemp)
 	return forecastText, nil
+}
+
+// GetMultiDayForecast fetches weather forecasts for multiple days
+func GetMultiDayForecast(latitude, longitude float64, days int) ([]DailyForecast, error) {
+	// Construct the API URL
+	url := fmt.Sprintf("%s?lat=%.6f&lon=%.6f", MetNoAPIURL, latitude, longitude)
+
+	// Create a new request
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set required headers
+	req.Header.Set("User-Agent", UserAgent)
+
+	// Make the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch weather data: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check the response status code
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API returned non-OK status: %d", resp.StatusCode)
+	}
+
+	// Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Parse the JSON response
+	var forecast MetNoForecast
+	if err := json.Unmarshal(body, &forecast); err != nil {
+		return nil, fmt.Errorf("failed to parse weather data: %w", err)
+	}
+
+	// Extract relevant forecast data
+	if len(forecast.Properties.Timeseries) == 0 {
+		return nil, fmt.Errorf("no forecast data available")
+	}
+
+	// Group forecasts by day
+	dailyForecasts := make(map[string]*DailyForecast)
+
+	// Get the timezone from the local system
+	loc, err := time.LoadLocation("Local")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get local timezone: %w", err)
+	}
+
+	// Process each timeseries entry
+	for _, ts := range forecast.Properties.Timeseries {
+		// Convert to local time
+		localTime := ts.Time.In(loc)
+
+		// Format date as YYYY-MM-DD for grouping
+		dateKey := localTime.Format("2006-01-02")
+
+		// Skip if we already have enough days
+		if len(dailyForecasts) >= days && dailyForecasts[dateKey] == nil {
+			continue
+		}
+
+		// Get temperature and other details
+		temp := ts.Data.Instant.Details.AirTemperature
+		windSpeed := ts.Data.Instant.Details.WindSpeed
+
+		// Initialize daily forecast if not exists
+		if dailyForecasts[dateKey] == nil {
+			date, _ := time.Parse("2006-01-02", dateKey)
+			dailyForecasts[dateKey] = &DailyForecast{
+				Date:      date,
+				MinTemp:   temp,
+				MaxTemp:   temp,
+				WindSpeed: windSpeed,
+			}
+		}
+
+		// Update min/max temperature
+		if temp < dailyForecasts[dateKey].MinTemp {
+			dailyForecasts[dateKey].MinTemp = temp
+		}
+		if temp > dailyForecasts[dateKey].MaxTemp {
+			dailyForecasts[dateKey].MaxTemp = temp
+		}
+
+		// Update wind speed (use average or max as needed)
+		dailyForecasts[dateKey].WindSpeed = (dailyForecasts[dateKey].WindSpeed + windSpeed) / 2
+
+		// Get the weather symbol for the day
+		// Prefer symbols from daytime hours (8:00 - 20:00)
+		if dailyForecasts[dateKey].SymbolCode == "" || (localTime.Hour() >= 8 && localTime.Hour() <= 20) {
+			var symbolCode string
+			if ts.Data.Next6Hours != nil {
+				symbolCode = ts.Data.Next6Hours.Summary.SymbolCode
+			} else if ts.Data.Next1Hours != nil {
+				symbolCode = ts.Data.Next1Hours.Summary.SymbolCode
+			} else if ts.Data.Next12Hours != nil {
+				symbolCode = ts.Data.Next12Hours.Summary.SymbolCode
+			}
+
+			if symbolCode != "" {
+				dailyForecasts[dateKey].SymbolCode = symbolCode
+				if desc, ok := WeatherSymbols[symbolCode]; ok {
+					dailyForecasts[dateKey].Description = desc
+				} else {
+					dailyForecasts[dateKey].Description = "vaihtelevaa"
+				}
+			}
+		}
+	}
+
+	// Convert map to slice and sort by date
+	var result []DailyForecast
+	for _, forecast := range dailyForecasts {
+		result = append(result, *forecast)
+	}
+
+	// Sort by date
+	for i := 0; i < len(result); i++ {
+		for j := i + 1; j < len(result); j++ {
+			if result[i].Date.After(result[j].Date) {
+				result[i], result[j] = result[j], result[i]
+			}
+		}
+	}
+
+	// Limit to requested number of days
+	if len(result) > days {
+		result = result[:days]
+	}
+
+	return result, nil
+}
+
+// FormatDailyForecast formats a daily forecast as a string
+func FormatDailyForecast(forecast DailyForecast) string {
+	return fmt.Sprintf("Sää %s: %s, lämpötila %.0f-%.0f°C, tuulen nopeus %.1f m/s",
+		forecast.Date.Format("2006-01-02"),
+		forecast.Description,
+		forecast.MinTemp,
+		forecast.MaxTemp,
+		forecast.WindSpeed)
 }
