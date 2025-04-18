@@ -2,31 +2,31 @@
 
 # Build the application
 build:
-	go build -o stevens ./cmd/stevens
+	go build -o hovimestari ./cmd/stevens
 
 # Clean build artifacts
 clean:
-	rm -f stevens
+	rm -f hovimestari
 
 # Run the application
 run: build
-	./stevens
+	./hovimestari
 
 # Import calendar events
 import-calendar: build
-	./stevens import-calendar
+	./hovimestari import-calendar
 
 # Generate a daily brief
 generate-brief: build
-	./stevens generate-brief
+	./hovimestari generate-brief
 
 # Initialize the configuration (requires GEMINI_API_KEY and WEBCAL_URL)
 init-config: build
-	./stevens init-config --gemini-api-key="$(GEMINI_API_KEY)" --webcal-url="$(WEBCAL_URL)"
+	./hovimestari init-config --gemini-api-key="$(GEMINI_API_KEY)" --webcal-url="$(WEBCAL_URL)"
 
 # Add a memory (requires CONTENT, optional RELEVANCE_DATE and SOURCE)
 add-memory: build
-	./stevens add-memory --content="$(CONTENT)" $(if $(RELEVANCE_DATE),--relevance-date="$(RELEVANCE_DATE)") $(if $(SOURCE),--source="$(SOURCE)")
+	./hovimestari add-memory --content="$(CONTENT)" $(if $(RELEVANCE_DATE),--relevance-date="$(RELEVANCE_DATE)") $(if $(SOURCE),--source="$(SOURCE)")
 
 # Install dependencies
 deps:

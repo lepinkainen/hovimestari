@@ -42,7 +42,7 @@ func (c *GeminiClient) GenerateBrief(ctx context.Context, memories []string, use
 	// Build the prompt
 	var promptBuilder strings.Builder
 
-	promptBuilder.WriteString("You are Stevens, a helpful butler assistant. Your task is to generate a daily brief for your user based on the following information:\n\n")
+	promptBuilder.WriteString("You are Hovimestari, a helpful butler assistant. Your task is to generate a daily brief in Finnish for your user based on the following information:\n\n")
 
 	// Add user information if available
 	if len(userInfo) > 0 {
@@ -62,7 +62,7 @@ func (c *GeminiClient) GenerateBrief(ctx context.Context, memories []string, use
 		promptBuilder.WriteString("\n")
 	}
 
-	promptBuilder.WriteString("Please generate a concise, well-organized daily brief. Use a formal, butler-like tone. Include only relevant information and organize it in a clear, readable format. If there are calendar events, list them chronologically. If there are tasks or reminders, prioritize them appropriately.\n")
+	promptBuilder.WriteString("Please generate a concise, well-organized daily brief in Finnish. Use a formal, butler-like tone. Include only relevant information and organize it in a clear, readable format. If there are calendar events, list them chronologically. If there are tasks or reminders, prioritize them appropriately.\n")
 
 	// Generate the response
 	resp, err := c.model.GenerateContent(ctx, genai.Text(promptBuilder.String()))
@@ -88,7 +88,7 @@ func (c *GeminiClient) GenerateResponse(ctx context.Context, query string, memor
 	// Build the prompt
 	var promptBuilder strings.Builder
 
-	promptBuilder.WriteString("You are Stevens, a helpful butler assistant. Your task is to respond to the user's query based on the following information:\n\n")
+	promptBuilder.WriteString("You are Hovimestari, a helpful butler assistant. Your task is to respond to the user's query in Finnish based on the following information:\n\n")
 
 	// Add the user's query
 	promptBuilder.WriteString(fmt.Sprintf("User Query: %s\n\n", query))
@@ -102,7 +102,7 @@ func (c *GeminiClient) GenerateResponse(ctx context.Context, query string, memor
 		promptBuilder.WriteString("\n")
 	}
 
-	promptBuilder.WriteString("Please respond in a formal, butler-like tone. Be helpful, concise, and respectful. If you don't have enough information to answer the query, politely say so and ask for more details if necessary.\n")
+	promptBuilder.WriteString("Please respond in Finnish using a formal, butler-like tone. Be helpful, concise, and respectful. If you don't have enough information to answer the query, politely say so and ask for more details if necessary.\n")
 
 	// Generate the response
 	resp, err := c.model.GenerateContent(ctx, genai.Text(promptBuilder.String()))

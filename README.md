@@ -1,16 +1,18 @@
-# Stevens - A Personal AI Butler Assistant
+# Hovimestari - A Personal AI Butler Assistant
 
-Stevens is a personal AI butler assistant inspired by the article ["How I Made a Useful AI Assistant with One SQLite Table and a Handful of Cron Jobs"](https://www.geoffreylitt.com/2025/04/12/how-i-made-a-useful-ai-assistant-with-one-sqlite-table-and-a-handful-of-cron-jobs) by Geoffrey Litt.
+Hovimestari is a personal AI butler assistant inspired by the article ["How I Made a Useful AI Assistant with One SQLite Table and a Handful of Cron Jobs"](https://www.geoffreylitt.com/2025/04/12/how-i-made-a-useful-ai-assistant-with-one-sqlite-table-and-a-handful-of-cron-jobs) by Geoffrey Litt.
+
+The name "Hovimestari" means "Butler" in Finnish, and this assistant generates its briefs in Finnish.
 
 ## Overview
 
-Stevens is a simple yet powerful personal assistant that:
+Hovimestari is a simple yet powerful personal assistant that:
 
 1. Stores "memories" in a single SQLite database table
 2. Imports calendar events from an iCloud WebCal URL
 3. Generates daily briefs using Google's Gemini AI
 4. Allows manual addition of memories
-5. Uses a formal, butler-like tone in its communications
+5. Uses a formal, butler-like tone in its communications (in Finnish)
 
 ## Architecture
 
@@ -35,8 +37,8 @@ The application follows a clean, modular architecture:
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/stevens.git
-cd stevens
+git clone https://github.com/yourusername/hovimestari.git
+cd hovimestari
 ```
 
 2. Install dependencies:
@@ -58,7 +60,7 @@ make build
 GEMINI_API_KEY="YOUR_GEMINI_API_KEY" WEBCAL_URL="YOUR_WEBCAL_URL" make init-config
 
 # Or directly with the CLI
-./stevens init-config --gemini-api-key="YOUR_GEMINI_API_KEY" --webcal-url="YOUR_WEBCAL_URL"
+./hovimestari init-config --gemini-api-key="YOUR_GEMINI_API_KEY" --webcal-url="YOUR_WEBCAL_URL"
 ```
 
 Alternatively, you can copy the example configuration file and edit it:
@@ -79,7 +81,7 @@ You can use the CLI directly or use the provided Makefile targets.
 make import-calendar
 
 # Or directly with the CLI
-./stevens import-calendar
+./hovimestari import-calendar
 ```
 
 #### Generate a Daily Brief
@@ -89,7 +91,7 @@ make import-calendar
 make generate-brief
 
 # Or directly with the CLI
-./stevens generate-brief
+./hovimestari generate-brief
 ```
 
 #### Add a Memory Manually
@@ -99,7 +101,7 @@ make generate-brief
 CONTENT="Remember to buy milk" RELEVANCE_DATE="2025-04-20" SOURCE="manual" make add-memory
 
 # Or directly with the CLI
-./stevens add-memory --content="Remember to buy milk" --relevance-date="2025-04-20" --source="manual"
+./hovimestari add-memory --content="Remember to buy milk" --relevance-date="2025-04-20" --source="manual"
 ```
 
 #### Available Make Targets
