@@ -5,7 +5,7 @@ For detailed project structure, technology stack, and core concepts, refer to `P
 ## Language
 
 - The name "Hovimestari" means "Butler" in Finnish.
-- All briefs and responses are generated in Finnish.
+- All briefs and responses are generated in a language the user can configure.
 - Code comments and documentation are in English.
 - All log output and CLI messages should be in English.
 
@@ -27,7 +27,7 @@ For detailed project structure, technology stack, and core concepts, refer to `P
 ### Dependencies
 
 - Prefer standard library solutions when possible.
-- Minimize external dependencies.
+- Minimize external dependencies, unless an external dependency makes the code more cleaner or efficient.
 - Pin dependency versions in go.mod.
 
 ### LLM Prompts

@@ -163,12 +163,54 @@ The configuration is stored in `config.json` by default. You can specify a diffe
 - **family**: List of family members with optional birthdays
 - **output_format**: Output format (currently only "cli" is supported)
 
+## Testing
+
+The project includes unit tests for deterministic functions that don't rely on external dependencies like network connections, databases, or LLM services.
+
+### Running Tests
+
+To run all tests:
+
+```bash
+make test
+```
+
+Or directly with Go:
+
+```bash
+go test ./...
+```
+
+### Test Coverage
+
+The following deterministic functions are covered by unit tests:
+
+#### Calendar Importer (`internal/importer/calendar`)
+
+- **URL Conversion in `NewImporter`**: Tests the conversion of `webcal://` URLs to `https://`
+- **`formatEvent`**: Tests the formatting of calendar events into memory strings
+- **`filterValidEvents`**: Tests the filtering of iCalendar data to remove events without DTSTAMP
+
+#### Weather Package (`internal/weather`)
+
+- **`FormatDailyForecast`**: Tests the formatting of weather forecast data into human-readable strings
+
+#### Weather Importer (`internal/importer/weather`)
+
+- **`NewImporter`**: Tests the creation of a new weather importer with correct parameters
+- **`SourcePrefix`**: Tests that the source prefix constant is set correctly
+
+### Adding New Tests
+
+When adding new functionality to the project, consider writing unit tests for deterministic functions that don't rely on external dependencies. This helps ensure that the core logic remains correct as the codebase evolves.
+
 ## Future Enhancements
 
 - Telegram integration for sending daily briefs and receiving queries
 - Additional importers (weather, email, etc.)
 - Web interface for viewing and managing memories
 - Scheduled execution via cron jobs
+- Expanded test coverage
 
 ## License
 
