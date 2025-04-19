@@ -234,8 +234,20 @@ func runGenerateBrief(ctx context.Context) error {
 		return fmt.Errorf("failed to initialize store: %w", err)
 	}
 
+	// Determine the prompt file path
+	promptFilePath := cfg.PromptFilePath
+	if promptFilePath == "" {
+		promptFilePath = "prompts.json"
+	}
+
+	// Load the prompts
+	prompts, err := config.LoadPrompts(promptFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to load prompts: %w", err)
+	}
+
 	// Create the LLM client
-	llmClient, err := llm.NewGeminiClient(cfg.GeminiAPIKey)
+	llmClient, err := llm.NewClient(cfg.GeminiAPIKey, prompts)
 	if err != nil {
 		return fmt.Errorf("failed to create LLM client: %w", err)
 	}
@@ -300,13 +312,15 @@ func runAddMemory(ctx context.Context, content, relevanceDateStr, source string)
 func runInitConfig(dbPath, geminiAPIKey, outputFormat string) error {
 	// Create a basic configuration
 	cfg := &config.Config{
-		DBPath:       dbPath,
-		GeminiAPIKey: geminiAPIKey,
-		OutputFormat: outputFormat,
-		LocationName: "Helsinki",
-		Latitude:     60.1699,
-		Longitude:    24.9384,
-		Timezone:     "Europe/Helsinki",
+		DBPath:         dbPath,
+		GeminiAPIKey:   geminiAPIKey,
+		OutputFormat:   outputFormat,
+		OutputLanguage: "Finnish",
+		PromptFilePath: "prompts.json",
+		LocationName:   "Helsinki",
+		Latitude:       60.1699,
+		Longitude:      24.9384,
+		Timezone:       "Europe/Helsinki",
 		Calendars: []config.CalendarConfig{
 			{
 				Name: "Example Calendar",

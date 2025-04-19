@@ -15,12 +15,12 @@ import (
 // Generator handles generating briefs based on memories
 type Generator struct {
 	store *store.Store
-	llm   *llm.GeminiClient
+	llm   *llm.Client
 	cfg   *config.Config
 }
 
 // NewGenerator creates a new brief generator
-func NewGenerator(store *store.Store, llm *llm.GeminiClient, cfg *config.Config) *Generator {
+func NewGenerator(store *store.Store, llm *llm.Client, cfg *config.Config) *Generator {
 	return &Generator{
 		store: store,
 		llm:   llm,
@@ -138,8 +138,14 @@ func (g *Generator) GenerateDailyBrief(ctx context.Context, daysAhead int) (stri
 		userInfo["Birthdays"] = strings.Join(birthdaysToday, ", ")
 	}
 
+	// Get output language from config, default to Finnish if not specified
+	outputLanguage := g.cfg.OutputLanguage
+	if outputLanguage == "" {
+		outputLanguage = "Finnish"
+	}
+
 	// Generate the brief
-	brief, err := g.llm.GenerateBrief(ctx, memoryStrings, userInfo)
+	brief, err := g.llm.GenerateBrief(ctx, memoryStrings, userInfo, outputLanguage)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate brief: %w", err)
 	}
@@ -169,8 +175,14 @@ func (g *Generator) GenerateResponse(ctx context.Context, query string) (string,
 		memoryStrings = append(memoryStrings, fmt.Sprintf("%s%s [Source: %s]", memory.Content, dateInfo, memory.Source))
 	}
 
+	// Get output language from config, default to Finnish if not specified
+	outputLanguage := g.cfg.OutputLanguage
+	if outputLanguage == "" {
+		outputLanguage = "Finnish"
+	}
+
 	// Generate the response
-	response, err := g.llm.GenerateResponse(ctx, query, memoryStrings)
+	response, err := g.llm.GenerateResponse(ctx, query, memoryStrings, outputLanguage)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate response: %w", err)
 	}

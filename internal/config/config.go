@@ -27,7 +27,9 @@ type Config struct {
 	DBPath string `json:"db_path"`
 
 	// LLM configuration
-	GeminiAPIKey string `json:"gemini_api_key"`
+	GeminiAPIKey   string `json:"gemini_api_key"`
+	OutputLanguage string `json:"outputLanguage"` // Language for LLM responses (e.g., "Finnish", "English")
+	PromptFilePath string `json:"promptFilePath"` // Path to the prompts.json file
 
 	// Location configuration
 	LocationName string  `json:"location_name"`
@@ -172,4 +174,28 @@ func SaveConfig(config *Config, configPath string) error {
 	}
 
 	return nil
+}
+
+// LoadPrompts loads the prompts from the specified file
+func LoadPrompts(filePath string) (map[string][]string, error) {
+	// If no path is provided, use the default
+	if filePath == "" {
+		filePath = "prompts.json"
+	}
+
+	// Open the file
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open prompts file: %w", err)
+	}
+	defer file.Close()
+
+	// Decode the JSON
+	var prompts map[string][]string
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&prompts); err != nil {
+		return nil, fmt.Errorf("failed to decode prompts file: %w", err)
+	}
+
+	return prompts, nil
 }

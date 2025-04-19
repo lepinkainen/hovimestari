@@ -64,6 +64,13 @@
 - Minimize external dependencies.
 - Pin dependency versions in go.mod.
 
+### LLM Prompts
+
+- Store LLM prompts in English in configuration files (e.g., `prompts.json`).
+- Use placeholders (e.g., `%LANG%`) for output language, which is specified in `config.json`.
+- Use placeholders (e.g., `%NOTES%`) for dynamic content like memories.
+- Keep prompts clear, concise, and focused on the specific task.
+
 ### Testing
 
 - Write unit tests for core functionality.
