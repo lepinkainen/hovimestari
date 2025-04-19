@@ -41,6 +41,7 @@
 - The name "Hovimestari" means "Butler" in Finnish.
 - All briefs and responses are generated in Finnish.
 - Code comments and documentation are in English.
+- All log output and CLI messages should be in English.
 
 ## Development Guidelines
 

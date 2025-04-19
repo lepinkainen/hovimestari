@@ -79,7 +79,7 @@ func (g *Generator) GenerateDailyBrief(ctx context.Context, daysAhead int) (stri
 			// Check if today is their birthday (ignore year)
 			if birthday.Month() == now.Month() && birthday.Day() == now.Day() {
 				age := now.Year() - birthday.Year()
-				birthdaysToday = append(birthdaysToday, fmt.Sprintf("%s (%d vuotta)", member.Name, age))
+				birthdaysToday = append(birthdaysToday, fmt.Sprintf("%s (%d years)", member.Name, age))
 			}
 		}
 	}
@@ -115,7 +115,7 @@ func (g *Generator) GenerateDailyBrief(ctx context.Context, daysAhead int) (stri
 	if forecast, ok := weatherForecasts[todayStr]; ok {
 		userInfo["Weather"] = forecast
 	} else {
-		userInfo["Weather"] = "Säätietoja ei saatavilla"
+		userInfo["Weather"] = "Weather information not available"
 	}
 
 	// Add future weather forecasts if available

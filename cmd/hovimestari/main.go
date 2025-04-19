@@ -165,7 +165,7 @@ func runImportCalendar(ctx context.Context) error {
 
 	// Import events from each calendar
 	for _, cal := range cfg.Calendars {
-		fmt.Printf("Tuodaan kalenteritapahtumia kalenterista '%s'...\n", cal.Name)
+		fmt.Printf("Importing calendar events from calendar '%s'...\n", cal.Name)
 
 		// Create the calendar importer
 		importer := calendar.NewImporter(store, cal.URL, cal.Name)
@@ -176,7 +176,7 @@ func runImportCalendar(ctx context.Context) error {
 		}
 	}
 
-	fmt.Println("Kalenteritapahtumat tuotu onnistuneesti.")
+	fmt.Println("Calendar events imported successfully.")
 	return nil
 }
 
@@ -200,7 +200,7 @@ func runImportWeather(ctx context.Context) error {
 		return fmt.Errorf("failed to initialize store: %w", err)
 	}
 
-	fmt.Printf("Tuodaan sääennusteita sijainnille '%s'...\n", cfg.LocationName)
+	fmt.Printf("Importing weather forecasts for location '%s'...\n", cfg.LocationName)
 
 	// Create the weather importer
 	importer := weatherimporter.NewImporter(store, cfg.Latitude, cfg.Longitude, cfg.LocationName)
@@ -210,7 +210,7 @@ func runImportWeather(ctx context.Context) error {
 		return fmt.Errorf("failed to import weather forecasts: %w", err)
 	}
 
-	fmt.Println("Sääennusteet tuotu onnistuneesti.")
+	fmt.Println("Weather forecasts imported successfully.")
 	return nil
 }
 
@@ -292,7 +292,7 @@ func runAddMemory(ctx context.Context, content, relevanceDateStr, source string)
 		return fmt.Errorf("failed to add memory: %w", err)
 	}
 
-	fmt.Printf("Muisti lisätty onnistuneesti ID:llä %d.\n", id)
+	fmt.Printf("Memory added successfully with ID %d.\n", id)
 	return nil
 }
 
@@ -334,7 +334,7 @@ func runInitConfig(dbPath, geminiAPIKey, outputFormat string) error {
 		return fmt.Errorf("failed to save configuration: %w", err)
 	}
 
-	fmt.Printf("Asetukset tallennettu tiedostoon %s.\n", configPath)
-	fmt.Println("HUOM: Muokkaa tiedostoa manuaalisesti lisätäksesi oikeat kalenterit, perheenjäsenet ja sijaintitiedot.")
+	fmt.Printf("Settings saved to file %s.\n", configPath)
+	fmt.Println("NOTE: Edit the file manually to add the correct calendars, family members, and location information.")
 	return nil
 }

@@ -185,14 +185,14 @@ func GetForecast(latitude, longitude float64) (string, error) {
 		}
 	}
 
-	// Translate the symbol code to Finnish
-	weatherDesc := "vaihtelevaa"
+	// Translate the symbol code to English
+	weatherDesc := "variable"
 	if desc, ok := WeatherSymbols[symbolCode]; ok {
 		weatherDesc = desc
 	}
 
 	// Format the forecast
-	forecastText := fmt.Sprintf("Sää tänään: %s, lämpötila %.0f-%.0f°C", weatherDesc, minTemp, maxTemp)
+	forecastText := fmt.Sprintf("Weather today: %s, temperature %.0f-%.0f°C", weatherDesc, minTemp, maxTemp)
 	return forecastText, nil
 }
 
@@ -302,7 +302,7 @@ func GetMultiDayForecast(latitude, longitude float64) ([]DailyForecast, error) {
 				if desc, ok := WeatherSymbols[symbolCode]; ok {
 					dailyForecasts[dateKey].Description = desc
 				} else {
-					dailyForecasts[dateKey].Description = "vaihtelevaa"
+					dailyForecasts[dateKey].Description = "variable"
 				}
 			}
 		}
@@ -332,7 +332,7 @@ func GetMultiDayForecast(latitude, longitude float64) ([]DailyForecast, error) {
 func FormatDailyForecast(forecast DailyForecast) string {
 	// Only include wind speed if it's over 5 m/s
 	if forecast.WindSpeed > 5.0 {
-		return fmt.Sprintf("Sää %s: %s, lämpötila %.0f-%.0f°C, tuulen nopeus %.1f m/s",
+		return fmt.Sprintf("Weather %s: %s, temperature %.0f-%.0f°C, wind speed %.1f m/s",
 			forecast.Date.Format("2006-01-02"),
 			forecast.Description,
 			forecast.MinTemp,
@@ -341,7 +341,7 @@ func FormatDailyForecast(forecast DailyForecast) string {
 	}
 
 	// Otherwise, just include temperature and conditions
-	return fmt.Sprintf("Sää %s: %s, lämpötila %.0f-%.0f°C",
+	return fmt.Sprintf("Weather %s: %s, temperature %.0f-%.0f°C",
 		forecast.Date.Format("2006-01-02"),
 		forecast.Description,
 		forecast.MinTemp,
