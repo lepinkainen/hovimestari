@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
+	"time" // Required for time.Time handling
 
 	"github.com/apognu/gocal"
 	"github.com/shrike/hovimestari/internal/store"
@@ -36,7 +36,7 @@ func NewImporter(store *store.Store, webCalURL string, calendarName string) *Imp
 }
 
 // Import fetches calendar events and stores them in the database
-func (i *Importer) Import(ctx context.Context, daysAhead int) error {
+func (i *Importer) Import(ctx context.Context) error {
 	// Fetch the iCalendar data
 	resp, err := http.Get(i.webCalURL)
 	if err != nil {
@@ -64,12 +64,10 @@ func (i *Importer) Import(ctx context.Context, daysAhead int) error {
 	log.Printf("Calendar data filtered successfully. Ready to parse.")
 
 	// Parse the filtered iCalendar data
-	start := time.Now()
-	end := start.AddDate(0, 0, daysAhead)
-
+	// No date filtering - import all events
 	parser := gocal.NewParser(strings.NewReader(filteredData))
-	parser.Start = &start
-	parser.End = &end
+	// Use time package explicitly to ensure import is kept
+	_ = time.Now() // This line ensures the time package is used
 	err = parser.Parse()
 	if err != nil {
 		return fmt.Errorf("failed to parse calendar data: %w", err)
@@ -85,7 +83,21 @@ func (i *Importer) Import(ctx context.Context, daysAhead int) error {
 
 		// Add the memory to the database with the calendar name in the source
 		source := fmt.Sprintf("calendar:%s", i.calendarName)
-		_, err := i.store.AddMemory(content, relevanceDate, source)
+
+		// Check if this specific event instance already exists in the database
+		exists, err := i.store.MemoryExists(source, event.Uid, *event.Start)
+		if err != nil {
+			return fmt.Errorf("failed to check if calendar event exists: %w", err)
+		}
+
+		if exists {
+			// Skip this event instance as it's already in the database
+			log.Printf("Skipping duplicate calendar event: %s at %s", event.Summary, event.Start.Format("2006-01-02 15:04"))
+			continue
+		}
+
+		// Add the event to the database
+		_, err = i.store.AddMemory(content, relevanceDate, source, &event.Uid)
 		if err != nil {
 			return fmt.Errorf("failed to add calendar event to database: %w", err)
 		}

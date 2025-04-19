@@ -33,9 +33,9 @@ func NewImporter(store *store.Store, latitude, longitude float64, location strin
 }
 
 // Import fetches weather forecasts and stores them in the database
-func (i *Importer) Import(ctx context.Context, daysAhead int) error {
-	// Fetch multi-day forecasts
-	forecasts, err := weather.GetMultiDayForecast(i.latitude, i.longitude, daysAhead)
+func (i *Importer) Import(ctx context.Context) error {
+	// Fetch all available forecasts
+	forecasts, err := weather.GetMultiDayForecast(i.latitude, i.longitude)
 	if err != nil {
 		return fmt.Errorf("failed to fetch weather forecasts: %w", err)
 	}
@@ -50,7 +50,7 @@ func (i *Importer) Import(ctx context.Context, daysAhead int) error {
 
 		// Add the memory to the database with the weather source
 		source := fmt.Sprintf("%s:%s", SourcePrefix, i.location)
-		_, err := i.store.AddMemory(content, &relevanceDate, source)
+		_, err := i.store.AddMemory(content, &relevanceDate, source, nil)
 		if err != nil {
 			return fmt.Errorf("failed to add weather forecast to database: %w", err)
 		}

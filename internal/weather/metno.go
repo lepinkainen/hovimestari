@@ -197,7 +197,7 @@ func GetForecast(latitude, longitude float64) (string, error) {
 }
 
 // GetMultiDayForecast fetches weather forecasts for multiple days
-func GetMultiDayForecast(latitude, longitude float64, days int) ([]DailyForecast, error) {
+func GetMultiDayForecast(latitude, longitude float64) ([]DailyForecast, error) {
 	// Construct the API URL
 	url := fmt.Sprintf("%s?lat=%.6f&lon=%.6f", MetNoAPIURL, latitude, longitude)
 
@@ -257,10 +257,7 @@ func GetMultiDayForecast(latitude, longitude float64, days int) ([]DailyForecast
 		// Format date as YYYY-MM-DD for grouping
 		dateKey := localTime.Format("2006-01-02")
 
-		// Skip if we already have enough days
-		if len(dailyForecasts) >= days && dailyForecasts[dateKey] == nil {
-			continue
-		}
+		// Process all available days
 
 		// Get temperature and other details
 		temp := ts.Data.Instant.Details.AirTemperature
@@ -326,10 +323,7 @@ func GetMultiDayForecast(latitude, longitude float64, days int) ([]DailyForecast
 		}
 	}
 
-	// Limit to requested number of days
-	if len(result) > days {
-		result = result[:days]
-	}
+	// Return all available days
 
 	return result, nil
 }

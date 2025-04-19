@@ -31,7 +31,6 @@ func main() {
 
 	// Add global flags
 	rootCmd.PersistentFlags().StringVar(&configPath, "config", "config.json", "Path to the configuration file")
-	rootCmd.PersistentFlags().IntVar(&daysAhead, "days-ahead", 7, "Number of days ahead to consider for events")
 
 	// Add commands
 	rootCmd.AddCommand(importCalendarCmd())
@@ -52,7 +51,7 @@ func importCalendarCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "import-calendar",
 		Short: "Import calendar events",
-		Long:  `Import calendar events from the configured WebCal URLs.`,
+		Long:  `Import all calendar events from the configured WebCal URLs.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runImportCalendar(cmd.Context())
 		},
@@ -66,7 +65,7 @@ func importWeatherCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "import-weather",
 		Short: "Import weather forecasts",
-		Long:  `Import weather forecasts for the configured location and store them as memories.`,
+		Long:  `Import all available weather forecasts for the configured location and store them as memories.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runImportWeather(cmd.Context())
 		},
@@ -85,6 +84,9 @@ func generateBriefCmd() *cobra.Command {
 			return runGenerateBrief(cmd.Context())
 		},
 	}
+
+	// Add days-ahead flag specifically for brief generation
+	cmd.Flags().IntVar(&daysAhead, "days-ahead", 7, "Number of days ahead to include in the brief")
 
 	return cmd
 }
@@ -169,7 +171,7 @@ func runImportCalendar(ctx context.Context) error {
 		importer := calendar.NewImporter(store, cal.URL, cal.Name)
 
 		// Import the calendar events
-		if err := importer.Import(ctx, daysAhead); err != nil {
+		if err := importer.Import(ctx); err != nil {
 			return fmt.Errorf("failed to import calendar events from '%s': %w", cal.Name, err)
 		}
 	}
@@ -204,7 +206,7 @@ func runImportWeather(ctx context.Context) error {
 	importer := weatherimporter.NewImporter(store, cfg.Latitude, cfg.Longitude, cfg.LocationName)
 
 	// Import the weather forecasts
-	if err := importer.Import(ctx, daysAhead); err != nil {
+	if err := importer.Import(ctx); err != nil {
 		return fmt.Errorf("failed to import weather forecasts: %w", err)
 	}
 
@@ -285,7 +287,7 @@ func runAddMemory(ctx context.Context, content, relevanceDateStr, source string)
 	}
 
 	// Add the memory
-	id, err := store.AddMemory(content, relevanceDate, source)
+	id, err := store.AddMemory(content, relevanceDate, source, nil)
 	if err != nil {
 		return fmt.Errorf("failed to add memory: %w", err)
 	}
