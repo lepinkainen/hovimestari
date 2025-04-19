@@ -2,7 +2,7 @@
 
 Hovimestari is a personal AI butler assistant inspired by the article ["How I Made a Useful AI Assistant with One SQLite Table and a Handful of Cron Jobs"](https://www.geoffreylitt.com/2025/04/12/how-i-made-a-useful-ai-assistant-with-one-sqlite-table-and-a-handful-of-cron-jobs) by Geoffrey Litt.
 
-The name "Hovimestari" means "Butler" in Finnish, and this assistant generates its briefs in Finnish.
+The name "Hovimestari" means "Butler" in Finnish.
 
 ## Features
 
@@ -24,13 +24,7 @@ Hovimestari is a simple yet powerful personal assistant that:
 
 ## Architecture
 
-The application follows a clean, modular architecture:
-
-- **Database**: A single SQLite table stores all memories
-- **Importers**: Components that fetch data from external sources and store them as memories
-- **LLM Client**: Interfaces with Google's Gemini API to generate human-like text
-- **Brief Generator**: Creates daily briefs based on relevant memories
-- **CLI**: Command-line interface for interacting with the system
+The application follows a clean, modular architecture with a focus on simplicity and extensibility. For detailed technical information about the project structure, components, and implementation details, please refer to [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
 ## Getting Started
 
