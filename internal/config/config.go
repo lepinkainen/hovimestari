@@ -28,8 +28,9 @@ type Config struct {
 
 	// LLM configuration
 	GeminiAPIKey   string `json:"gemini_api_key"`
-	OutputLanguage string `json:"outputLanguage"` // Language for LLM responses (e.g., "Finnish", "English")
-	PromptFilePath string `json:"promptFilePath"` // Path to the prompts.json file
+	GeminiModel    string `json:"gemini_model,omitempty"` // Gemini model to use (e.g., "gemini-2.0-flash")
+	OutputLanguage string `json:"outputLanguage"`         // Language for LLM responses (e.g., "Finnish", "English")
+	PromptFilePath string `json:"promptFilePath"`         // Path to the prompts.json file
 
 	// Location configuration
 	LocationName string  `json:"location_name"`
@@ -83,6 +84,15 @@ func LoadConfig(configPath string) (*Config, error) {
 
 	if outputFormat := os.Getenv("HOVIMESTARI_OUTPUT_FORMAT"); outputFormat != "" {
 		config.OutputFormat = outputFormat
+	}
+
+	if modelName := os.Getenv("HOVIMESTARI_GEMINI_MODEL"); modelName != "" {
+		config.GeminiModel = modelName
+	}
+
+	// Set default Gemini model if not specified
+	if config.GeminiModel == "" {
+		config.GeminiModel = "gemini-2.0-flash"
 	}
 
 	// Validate required configuration

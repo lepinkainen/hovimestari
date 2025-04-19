@@ -16,16 +16,16 @@ type Client struct {
 	prompts map[string][]string
 }
 
-// NewClient creates a new Gemini client with the given API key and prompts
-func NewClient(apiKey string, prompts map[string][]string) (*Client, error) {
+// NewClient creates a new Gemini client with the given API key, model name, and prompts
+func NewClient(apiKey string, modelName string, prompts map[string][]string) (*Client, error) {
 	ctx := context.Background()
 	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
 
-	// Use Gemini Pro model
-	model := client.GenerativeModel("gemini-2.0-flash")
+	// Use the specified model
+	model := client.GenerativeModel(modelName)
 
 	return &Client{
 		client:  client,
@@ -148,4 +148,44 @@ func (c *Client) GenerateResponse(ctx context.Context, query string, memories []
 
 	// Generate the response
 	return c.Generate(ctx, "userQuery", outputLanguage, promptContent)
+}
+
+// ListModels lists the available Gemini models
+func ListModels(ctx context.Context, apiKey string) ([]string, error) {
+	// Create a temporary client
+	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
+	}
+	defer client.Close()
+
+	// Try to list the models, but if it fails, return example models
+	iter := client.ListModels(ctx)
+
+	// Extract model names
+	var modelNames []string
+	for {
+		model, err := iter.Next()
+		if err != nil {
+			// If we've reached the end of the iterator or any other error,
+			// just break out of the loop - we'll return example models below
+			break
+		}
+		modelNames = append(modelNames, model.Name)
+	}
+
+	// If no models were found (either because the API returned none or there was an error),
+	// add some common models as examples
+	if len(modelNames) == 0 {
+		fmt.Println("No models returned by the API. Showing common model names as examples.")
+		fmt.Println("These may not all be available with your API key or in your region.")
+		fmt.Println()
+
+		modelNames = append(modelNames, "gemini-2.0-flash")
+		modelNames = append(modelNames, "gemini-1.5-flash")
+		modelNames = append(modelNames, "gemini-1.5-pro")
+		modelNames = append(modelNames, "gemini-1.0-pro")
+	}
+
+	return modelNames, nil
 }
