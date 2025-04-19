@@ -63,8 +63,8 @@ func (c *Client) Generate(ctx context.Context, promptKey string, outputLanguage 
 	return string(text), nil
 }
 
-// GenerateBrief generates a brief based on the provided memories
-func (c *Client) GenerateBrief(ctx context.Context, memories []string, userInfo map[string]string, outputLanguage string) (string, error) {
+// BuildBriefPrompt builds the prompt content for a brief without sending it to the LLM
+func (c *Client) BuildBriefPrompt(memories []string, userInfo map[string]string, outputLanguage string) string {
 	// Build the context information
 	var contextBuilder strings.Builder
 
@@ -146,6 +146,14 @@ func (c *Client) GenerateBrief(ctx context.Context, memories []string, userInfo 
 	promptContent = strings.ReplaceAll(promptContent, "%CONTEXT%", contextBuilder.String())
 	promptContent = strings.ReplaceAll(promptContent, "%NOTES%", memoryBuilder.String())
 	promptContent = strings.ReplaceAll(promptContent, "%LANG%", outputLanguage)
+
+	return promptContent
+}
+
+// GenerateBrief generates a brief based on the provided memories
+func (c *Client) GenerateBrief(ctx context.Context, memories []string, userInfo map[string]string, outputLanguage string) (string, error) {
+	// Build the prompt content
+	promptContent := c.BuildBriefPrompt(memories, userInfo, outputLanguage)
 
 	// Generate the brief
 	return c.Generate(ctx, "dailyBrief", outputLanguage, promptContent)

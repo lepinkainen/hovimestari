@@ -28,12 +28,12 @@ func NewGenerator(store *store.Store, llm *llm.Client, cfg *config.Config) *Gene
 	}
 }
 
-// GenerateDailyBrief generates a daily brief based on memories
-func (g *Generator) GenerateDailyBrief(ctx context.Context, daysAhead int) (string, error) {
+// BuildBriefContext builds the context for a daily brief without generating it
+func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]string, map[string]string, string, error) {
 	// Get the date range for relevant memories
 	loc, err := time.LoadLocation(g.cfg.Timezone)
 	if err != nil {
-		return "", fmt.Errorf("failed to load timezone: %w", err)
+		return nil, nil, "", fmt.Errorf("failed to load timezone: %w", err)
 	}
 
 	now := time.Now().In(loc)
@@ -43,7 +43,7 @@ func (g *Generator) GenerateDailyBrief(ctx context.Context, daysAhead int) (stri
 	// Get relevant memories
 	memories, err := g.store.GetRelevantMemories(startDate, endDate)
 	if err != nil {
-		return "", fmt.Errorf("failed to get relevant memories: %w", err)
+		return nil, nil, "", fmt.Errorf("failed to get relevant memories: %w", err)
 	}
 
 	// Convert memories to strings
@@ -219,6 +219,17 @@ func (g *Generator) GenerateDailyBrief(ctx context.Context, daysAhead int) (stri
 	outputLanguage := g.cfg.OutputLanguage
 	if outputLanguage == "" {
 		outputLanguage = "Finnish"
+	}
+
+	return memoryStrings, userInfo, outputLanguage, nil
+}
+
+// GenerateDailyBrief generates a daily brief based on memories
+func (g *Generator) GenerateDailyBrief(ctx context.Context, daysAhead int) (string, error) {
+	// Build the context
+	memoryStrings, userInfo, outputLanguage, err := g.BuildBriefContext(ctx, daysAhead)
+	if err != nil {
+		return "", err
 	}
 
 	// Generate the brief

@@ -36,6 +36,7 @@ func main() {
 	rootCmd.AddCommand(importCalendarCmd())
 	rootCmd.AddCommand(importWeatherCmd())
 	rootCmd.AddCommand(generateBriefCmd())
+	rootCmd.AddCommand(showBriefContextCmd())
 	rootCmd.AddCommand(addMemoryCmd())
 	rootCmd.AddCommand(initConfigCmd())
 	rootCmd.AddCommand(listModelsCmd())
@@ -347,6 +348,82 @@ func runListModels(ctx context.Context) error {
 	// Print the current model
 	fmt.Printf("\nCurrent model configured: %s\n", cfg.GeminiModel)
 	fmt.Println("\nTo change the model, edit the config.json file or set the HOVIMESTARI_GEMINI_MODEL environment variable.")
+
+	return nil
+}
+
+// showBriefContextCmd returns the show brief context command
+func showBriefContextCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "show-brief-context",
+		Short: "Show the context given to the LLM for brief generation",
+		Long:  `Show the full context that would be given to the LLM when generating a brief, without actually generating the brief.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runShowBriefContext(cmd.Context())
+		},
+	}
+
+	// Add days-ahead flag specifically for brief context
+	cmd.Flags().IntVar(&daysAhead, "days-ahead", 2, "Number of days ahead to include in the brief context")
+
+	return cmd
+}
+
+// runShowBriefContext runs the show brief context command
+func runShowBriefContext(ctx context.Context) error {
+	// Load the configuration
+	cfg, err := config.LoadConfig(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to load configuration: %w", err)
+	}
+
+	// Create the store
+	store, err := store.NewStore(cfg.DBPath)
+	if err != nil {
+		return fmt.Errorf("failed to create store: %w", err)
+	}
+	defer store.Close()
+
+	// Initialize the store
+	if err := store.Initialize(); err != nil {
+		return fmt.Errorf("failed to initialize store: %w", err)
+	}
+
+	// Determine the prompt file path
+	promptFilePath := cfg.PromptFilePath
+	if promptFilePath == "" {
+		promptFilePath = "prompts.json"
+	}
+
+	// Load the prompts
+	prompts, err := config.LoadPrompts(promptFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to load prompts: %w", err)
+	}
+
+	// Create the LLM client
+	llmClient, err := llm.NewClient(cfg.GeminiAPIKey, cfg.GeminiModel, prompts)
+	if err != nil {
+		return fmt.Errorf("failed to create LLM client: %w", err)
+	}
+	defer llmClient.Close()
+
+	// Create the brief generator
+	generator := brief.NewGenerator(store, llmClient, cfg)
+
+	// Build the brief context
+	memoryStrings, userInfo, outputLanguage, err := generator.BuildBriefContext(ctx, daysAhead)
+	if err != nil {
+		return fmt.Errorf("failed to build brief context: %w", err)
+	}
+
+	// Build the prompt content
+	promptContent := llmClient.BuildBriefPrompt(memoryStrings, userInfo, outputLanguage)
+
+	// Print the prompt content
+	fmt.Println("=== CONTEXT GIVEN TO LLM ===")
+	fmt.Println(promptContent)
+	fmt.Println("===========================")
 
 	return nil
 }
