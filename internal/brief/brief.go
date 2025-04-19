@@ -56,16 +56,8 @@ func (g *Generator) GenerateDailyBrief(ctx context.Context, daysAhead int) (stri
 		memoryStrings = append(memoryStrings, fmt.Sprintf("%s%s [Source: %s]", memory.Content, dateInfo, memory.Source))
 	}
 
-	// Format the current date in Finnish
-	weekdays := []string{"sunnuntai", "maanantai", "tiistai", "keskiviikko", "torstai", "perjantai", "lauantai"}
-	months := []string{"tammikuuta", "helmikuuta", "maaliskuuta", "huhtikuuta", "toukokuuta", "kesäkuuta", "heinäkuuta", "elokuuta", "syyskuuta", "lokakuuta", "marraskuuta", "joulukuuta"}
-
-	weekday := weekdays[now.Weekday()]
-	day := now.Day()
-	month := months[now.Month()-1]
-	year := now.Year()
-
-	formattedDate := fmt.Sprintf("%s, %d. %s %d", weekday, day, month, year)
+	// Format the current date in standard format (LLM will handle translation)
+	formattedDate := now.Format("Monday, 2 January 2006")
 
 	// Check for birthdays today
 	var birthdaysToday []string

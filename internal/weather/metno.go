@@ -59,51 +59,6 @@ type DailyForecast struct {
 	WindSpeed   float64
 }
 
-// WeatherSymbols maps MET Norway symbol codes to Finnish descriptions
-var WeatherSymbols = map[string]string{
-	"clearsky":                    "selkeää",
-	"fair":                        "poutaa",
-	"partlycloudy":                "puolipilvistä",
-	"cloudy":                      "pilvistä",
-	"rainshowers":                 "sadekuuroja",
-	"rainshowersandthunder":       "sadekuuroja ja ukkosta",
-	"sleetshowers":                "räntäkuuroja",
-	"snowshowers":                 "lumikuuroja",
-	"rain":                        "sadetta",
-	"heavyrain":                   "rankkasadetta",
-	"heavyrainandthunder":         "rankkasadetta ja ukkosta",
-	"sleet":                       "räntää",
-	"snow":                        "lumisadetta",
-	"snowandthunder":              "lumisadetta ja ukkosta",
-	"fog":                         "sumua",
-	"sleetshowersandthunder":      "räntäkuuroja ja ukkosta",
-	"snowshowersandthunder":       "lumikuuroja ja ukkosta",
-	"rainandthunder":              "sadetta ja ukkosta",
-	"sleetandthunder":             "räntää ja ukkosta",
-	"lightrainshowersandthunder":  "kevyitä sadekuuroja ja ukkosta",
-	"heavyrainshowersandthunder":  "voimakkaita sadekuuroja ja ukkosta",
-	"lightsleetshowersandthunder": "kevyitä räntäkuuroja ja ukkosta",
-	"heavysleetshowersandthunder": "voimakkaita räntäkuuroja ja ukkosta",
-	"lightsnowshowersandthunder":  "kevyitä lumikuuroja ja ukkosta",
-	"heavysnowshowersandthunder":  "voimakkaita lumikuuroja ja ukkosta",
-	"lightrainandthunder":         "kevyttä sadetta ja ukkosta",
-	"lightsleetandthunder":        "kevyttä räntää ja ukkosta",
-	"heavysleetandthunder":        "voimakasta räntää ja ukkosta",
-	"lightsnowandthunder":         "kevyttä lumisadetta ja ukkosta",
-	"heavysnowandthunder":         "voimakasta lumisadetta ja ukkosta",
-	"lightrainshowers":            "kevyitä sadekuuroja",
-	"heavyrainshowers":            "voimakkaita sadekuuroja",
-	"lightsleetshowers":           "kevyitä räntäkuuroja",
-	"heavysleetshowers":           "voimakkaita räntäkuuroja",
-	"lightsnowshowers":            "kevyitä lumikuuroja",
-	"heavysnowshowers":            "voimakkaita lumikuuroja",
-	"lightrain":                   "kevyttä sadetta",
-	"lightsleet":                  "kevyttä räntää",
-	"heavysleet":                  "voimakasta räntää",
-	"lightsnow":                   "kevyttä lumisadetta",
-	"heavysnow":                   "voimakasta lumisadetta",
-}
-
 // GetForecast fetches the weather forecast for the given location
 func GetForecast(latitude, longitude float64) (string, error) {
 	// Construct the API URL
@@ -185,10 +140,10 @@ func GetForecast(latitude, longitude float64) (string, error) {
 		}
 	}
 
-	// Translate the symbol code to English
+	// Use the symbol code directly (no translation)
 	weatherDesc := "variable"
-	if desc, ok := WeatherSymbols[symbolCode]; ok {
-		weatherDesc = desc
+	if symbolCode != "" {
+		weatherDesc = symbolCode
 	}
 
 	// Format the forecast
@@ -299,11 +254,8 @@ func GetMultiDayForecast(latitude, longitude float64) ([]DailyForecast, error) {
 
 			if symbolCode != "" {
 				dailyForecasts[dateKey].SymbolCode = symbolCode
-				if desc, ok := WeatherSymbols[symbolCode]; ok {
-					dailyForecasts[dateKey].Description = desc
-				} else {
-					dailyForecasts[dateKey].Description = "variable"
-				}
+				// Store the symbol code directly in the Description field
+				dailyForecasts[dateKey].Description = symbolCode
 			}
 		}
 	}
@@ -324,7 +276,6 @@ func GetMultiDayForecast(latitude, longitude float64) ([]DailyForecast, error) {
 	}
 
 	// Return all available days
-
 	return result, nil
 }
 
