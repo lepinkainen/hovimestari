@@ -87,7 +87,7 @@ func generateBriefCmd() *cobra.Command {
 	}
 
 	// Add days-ahead flag specifically for brief generation
-	cmd.Flags().IntVar(&daysAhead, "days-ahead", 7, "Number of days ahead to include in the brief")
+	cmd.Flags().IntVar(&daysAhead, "days-ahead", 2, "Number of days ahead to include in the brief")
 
 	return cmd
 }

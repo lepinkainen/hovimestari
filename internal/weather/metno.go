@@ -23,10 +23,11 @@ type MetNoForecast struct {
 			Data struct {
 				Instant struct {
 					Details struct {
-						AirTemperature    float64 `json:"air_temperature"`
-						RelativeHumidity  float64 `json:"relative_humidity"`
-						WindSpeed         float64 `json:"wind_speed"`
-						WindFromDirection float64 `json:"wind_from_direction"`
+						AirTemperature           float64 `json:"air_temperature"`
+						RelativeHumidity         float64 `json:"relative_humidity"`
+						WindSpeed                float64 `json:"wind_speed"`
+						WindFromDirection        float64 `json:"wind_from_direction"`
+						UltravioletIndexClearSky float64 `json:"ultraviolet_index_clear_sky"`
 					} `json:"details"`
 				} `json:"instant"`
 				Next1Hours *struct {
@@ -57,6 +58,7 @@ type DailyForecast struct {
 	SymbolCode  string
 	Description string
 	WindSpeed   float64
+	UVIndex     float64
 }
 
 // GetForecast fetches the weather forecast for the given location
@@ -217,6 +219,7 @@ func GetMultiDayForecast(latitude, longitude float64) ([]DailyForecast, error) {
 		// Get temperature and other details
 		temp := ts.Data.Instant.Details.AirTemperature
 		windSpeed := ts.Data.Instant.Details.WindSpeed
+		uvIndex := ts.Data.Instant.Details.UltravioletIndexClearSky
 
 		// Initialize daily forecast if not exists
 		if dailyForecasts[dateKey] == nil {
@@ -226,6 +229,7 @@ func GetMultiDayForecast(latitude, longitude float64) ([]DailyForecast, error) {
 				MinTemp:   temp,
 				MaxTemp:   temp,
 				WindSpeed: windSpeed,
+				UVIndex:   uvIndex,
 			}
 		}
 
@@ -239,6 +243,11 @@ func GetMultiDayForecast(latitude, longitude float64) ([]DailyForecast, error) {
 
 		// Update wind speed (use average or max as needed)
 		dailyForecasts[dateKey].WindSpeed = (dailyForecasts[dateKey].WindSpeed + windSpeed) / 2
+
+		// Update UV index (use maximum value for the day)
+		if uvIndex > dailyForecasts[dateKey].UVIndex {
+			dailyForecasts[dateKey].UVIndex = uvIndex
+		}
 
 		// Get the weather symbol for the day
 		// Prefer symbols from daytime hours (8:00 - 20:00)
@@ -281,20 +290,31 @@ func GetMultiDayForecast(latitude, longitude float64) ([]DailyForecast, error) {
 
 // FormatDailyForecast formats a daily forecast as a string
 func FormatDailyForecast(forecast DailyForecast) string {
-	// Only include wind speed if it's over 5 m/s
+	var result string
+
+	// Base format with temperature
+	baseFormat := "Weather %s: %s, temperature %.0f-%.0f°C"
+
+	// Add wind speed if it's over 5 m/s
 	if forecast.WindSpeed > 5.0 {
-		return fmt.Sprintf("Weather %s: %s, temperature %.0f-%.0f°C, wind speed %.1f m/s",
+		result = fmt.Sprintf(baseFormat+", wind speed %.1f m/s",
 			forecast.Date.Format("2006-01-02"),
 			forecast.Description,
 			forecast.MinTemp,
 			forecast.MaxTemp,
 			forecast.WindSpeed)
+	} else {
+		result = fmt.Sprintf(baseFormat,
+			forecast.Date.Format("2006-01-02"),
+			forecast.Description,
+			forecast.MinTemp,
+			forecast.MaxTemp)
 	}
 
-	// Otherwise, just include temperature and conditions
-	return fmt.Sprintf("Weather %s: %s, temperature %.0f-%.0f°C",
-		forecast.Date.Format("2006-01-02"),
-		forecast.Description,
-		forecast.MinTemp,
-		forecast.MaxTemp)
+	// Add UV index if it's 3.0 or higher
+	if forecast.UVIndex >= 3.0 {
+		result = fmt.Sprintf("%s, Max UV Index: %.1f", result, forecast.UVIndex)
+	}
+
+	return result
 }
