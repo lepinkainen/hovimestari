@@ -105,11 +105,14 @@ func (c *GeminiClient) GenerateBrief(ctx context.Context, memories []string, use
 		promptBuilder.WriteString("\n")
 	}
 
-	promptBuilder.WriteString("Please generate a concise, well-organized daily brief in Finnish. Use a formal, butler-like tone as if you were a professional butler addressing the family. Begin with a proper greeting that includes the current date. Include today's weather forecast near the beginning of the brief, don't mention wind speed unless it's noticeably high. If there are upcoming weather forecasts, include them in a separate section. If there are changes to weather forecasts compared to previous forecasts, mention these changes. If there are birthdays today, make sure to highlight them prominently with congratulations.\n\n")
+	promptBuilder.WriteString("Please generate a concise, well-organized daily brief in Finnish. Use a formal, butler-like tone as if you were a professional butler addressing the family. Begin with a proper greeting that includes the current date. Include today's weather forecast near the beginning of the brief. If there are upcoming weather forecasts, include them along with the upcoming events, don't mention wind speed unless it's noticeably high (over 5m/s). If there are changes to weather forecasts compared to previous forecasts, mention these changes. If there are birthdays today, make sure to highlight them prominently with congratulations.\n\n")
 
 	promptBuilder.WriteString("Organize the information in a clear, readable format with appropriate sections. If there are calendar events, list them chronologically. If there are tasks or reminders, prioritize them appropriately. Use emojis where appropriate.\n\n")
 
 	promptBuilder.WriteString("End the brief with a respectful closing remark, as a butler would.\n")
+
+	// For debugging purposes, you can print the prompt
+	//fmt.Println("Prompt for Gemini:", promptBuilder.String())
 
 	// Generate the response
 	resp, err := c.model.GenerateContent(ctx, genai.Text(promptBuilder.String()))
