@@ -72,15 +72,26 @@ func (c *Client) GenerateBrief(ctx context.Context, memories []string, userInfo 
 	if len(userInfo) > 0 {
 		// Extract specific information for special handling
 		date := userInfo["Date"]
+		currentTime := userInfo["CurrentTime"]
+		timezone := userInfo["Timezone"]
 		location := userInfo["Location"]
 		family := userInfo["Family"]
 		weather := userInfo["Weather"]
 		futureWeather := userInfo["FutureWeather"]
 		weatherChanges := userInfo["WeatherChanges"]
 		birthdays := userInfo["Birthdays"]
+		ongoingEvents := userInfo["OngoingEvents"]
 
 		if date != "" {
 			contextBuilder.WriteString(fmt.Sprintf("- Current Date: %s\n", date))
+		}
+
+		if currentTime != "" {
+			contextBuilder.WriteString(fmt.Sprintf("- Current Time: %s\n", currentTime))
+		}
+
+		if timezone != "" {
+			contextBuilder.WriteString(fmt.Sprintf("- Timezone: %s\n", timezone))
 		}
 
 		if location != "" {
@@ -113,6 +124,14 @@ func (c *Client) GenerateBrief(ctx context.Context, memories []string, userInfo 
 
 		if birthdays != "" {
 			contextBuilder.WriteString(fmt.Sprintf("- Birthdays Today: %s\n", birthdays))
+		}
+
+		if ongoingEvents != "" {
+			contextBuilder.WriteString("- Currently Ongoing:\n")
+			events := strings.Split(ongoingEvents, "\n")
+			for _, event := range events {
+				contextBuilder.WriteString(fmt.Sprintf("  * %s\n", event))
+			}
 		}
 	}
 

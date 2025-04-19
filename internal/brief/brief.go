@@ -56,8 +56,9 @@ func (g *Generator) GenerateDailyBrief(ctx context.Context, daysAhead int) (stri
 		memoryStrings = append(memoryStrings, fmt.Sprintf("%s%s [Source: %s]", memory.Content, dateInfo, memory.Source))
 	}
 
-	// Format the current date in standard format (LLM will handle translation)
+	// Format the current date and time in standard format (LLM will handle translation)
 	formattedDate := now.Format("Monday, 2 January 2006")
+	formattedTime := now.Format("15:04")
 
 	// Check for birthdays today
 	var birthdaysToday []string
@@ -95,11 +96,87 @@ func (g *Generator) GenerateDailyBrief(ctx context.Context, daysAhead int) (stri
 		fmt.Printf("Warning: Failed to detect forecast changes: %v\n", err)
 	}
 
+	// Find ongoing calendar events
+	var ongoingEvents []string
+	for _, memory := range memories {
+		// Check if this is a calendar event
+		if strings.HasPrefix(memory.Source, "calendar:") && strings.HasPrefix(memory.Content, "Calendar Event:") {
+			// Parse the event content to extract start and end times
+			content := memory.Content
+
+			// Check if the event has a time range
+			if strings.Contains(content, " from ") && strings.Contains(content, " to ") {
+				// Extract the start and end times
+				fromIndex := strings.Index(content, " from ")
+				toIndex := strings.Index(content, " to ")
+
+				if fromIndex > 0 && toIndex > fromIndex {
+					// Extract the date-time strings
+					timeStr := content[fromIndex+6 : toIndex]
+					endTimeStr := content[toIndex+4:]
+
+					// If end time contains " at ", truncate it
+					if atIndex := strings.Index(endTimeStr, " at "); atIndex > 0 {
+						endTimeStr = endTimeStr[:atIndex]
+					} else if dotIndex := strings.Index(endTimeStr, "."); dotIndex > 0 {
+						// If end time contains ".", truncate it
+						endTimeStr = endTimeStr[:dotIndex]
+					}
+
+					// Parse the start time
+					var startTime time.Time
+					var endTime time.Time
+					var err error
+
+					// Try to parse with different formats
+					startTime, err = time.ParseInLocation("2006-01-02 15:04", timeStr, loc)
+					if err == nil {
+						// Check if end time is just a time (not a full date)
+						if !strings.Contains(endTimeStr, "-") {
+							// End time is just HH:MM, use the same date as start
+							endTime, err = time.ParseInLocation("15:04", endTimeStr, loc)
+							if err == nil {
+								// Combine the start date with the end time
+								endTime = time.Date(
+									startTime.Year(), startTime.Month(), startTime.Day(),
+									endTime.Hour(), endTime.Minute(), 0, 0, loc,
+								)
+							}
+						} else {
+							// End time includes a date
+							endTime, err = time.ParseInLocation("2006-01-02 15:04", endTimeStr, loc)
+						}
+
+						// Check if the event is ongoing
+						if err == nil && now.After(startTime) && now.Before(endTime) {
+							// Extract the event summary
+							summary := content[len("Calendar Event: "):fromIndex]
+
+							// Format the ongoing event
+							ongoingEvent := fmt.Sprintf("%s (until %s)",
+								summary,
+								endTime.Format("15:04"),
+							)
+							ongoingEvents = append(ongoingEvents, ongoingEvent)
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// Add user information
 	userInfo := map[string]string{
-		"Date":     formattedDate,
-		"Location": g.cfg.LocationName,
-		"Family":   strings.Join(familyNames, ", "),
+		"Date":        formattedDate,
+		"CurrentTime": formattedTime,
+		"Timezone":    g.cfg.Timezone,
+		"Location":    g.cfg.LocationName,
+		"Family":      strings.Join(familyNames, ", "),
+	}
+
+	// Add ongoing events if any
+	if len(ongoingEvents) > 0 {
+		userInfo["OngoingEvents"] = strings.Join(ongoingEvents, "\n")
 	}
 
 	// Add today's weather if available
