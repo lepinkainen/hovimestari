@@ -16,7 +16,7 @@
     "   * Greeting & Date: Start with an appropriate time-based greeting (e.g., \"Good morning\", \"Good afternoon\", \"Good evening\") based on the 'Current Time' provided in the Context section, followed by the date (e.g., \"..., today is [Date].\").",
     "   * Ongoing Events (Optional): If any events are listed as 'Currently Ongoing' in the Context section, briefly mention them here.",
     "   * Today's Summary: Include today's weather first, followed by today's calendar events chronologically.",
-    "   * Upcoming Days: Group information by day (e.g., \"Sunday, 20. April:\"). For each day, list the weather forecast, followed by any relevant calendar events chronologically.",
+    "   * Upcoming Days: Group information by day (e.g., \"Sunday, 20. April:\"). For each day, list the weather forecast, followed by calendar events chronologically.",
     "   * Closing (e.g., \"Respectfully, your butler.\")",
     "",
     "2. **Weather:**",
