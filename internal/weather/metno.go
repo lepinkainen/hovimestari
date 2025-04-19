@@ -336,10 +336,20 @@ func GetMultiDayForecast(latitude, longitude float64, days int) ([]DailyForecast
 
 // FormatDailyForecast formats a daily forecast as a string
 func FormatDailyForecast(forecast DailyForecast) string {
-	return fmt.Sprintf("Sää %s: %s, lämpötila %.0f-%.0f°C, tuulen nopeus %.1f m/s",
+	// Only include wind speed if it's over 5 m/s
+	if forecast.WindSpeed > 5.0 {
+		return fmt.Sprintf("Sää %s: %s, lämpötila %.0f-%.0f°C, tuulen nopeus %.1f m/s",
+			forecast.Date.Format("2006-01-02"),
+			forecast.Description,
+			forecast.MinTemp,
+			forecast.MaxTemp,
+			forecast.WindSpeed)
+	}
+
+	// Otherwise, just include temperature and conditions
+	return fmt.Sprintf("Sää %s: %s, lämpötila %.0f-%.0f°C",
 		forecast.Date.Format("2006-01-02"),
 		forecast.Description,
 		forecast.MinTemp,
-		forecast.MaxTemp,
-		forecast.WindSpeed)
+		forecast.MaxTemp)
 }

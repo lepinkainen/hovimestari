@@ -105,11 +105,30 @@ func (c *GeminiClient) GenerateBrief(ctx context.Context, memories []string, use
 		promptBuilder.WriteString("\n")
 	}
 
-	promptBuilder.WriteString("Please generate a concise, well-organized daily brief in Finnish. Use a formal, butler-like tone as if you were a professional butler addressing the family. Begin with a proper greeting that includes the current date. Include today's weather forecast near the beginning of the brief. If there are upcoming weather forecasts, include them along with the upcoming events, don't mention wind speed unless it's noticeably high (over 5m/s). If there are changes to weather forecasts compared to previous forecasts, mention these changes. If there are birthdays today, make sure to highlight them prominently with congratulations.\n\n")
+	promptBuilder.WriteString("Please generate a concise, well-organized daily brief in Finnish. Use a formal, respectful, butler-like tone throughout.\n\n")
 
-	promptBuilder.WriteString("Organize the information in a clear, readable format with appropriate sections. If there are calendar events, list them chronologically. If there are tasks or reminders, prioritize them appropriately. Use emojis where appropriate.\n\n")
+	promptBuilder.WriteString("**Instructions:**\n\n")
 
-	promptBuilder.WriteString("End the brief with a respectful closing remark, as a butler would.\n")
+	promptBuilder.WriteString("1. **Structure:** Structure the brief as follows:\n")
+	promptBuilder.WriteString("   * Greeting & Date (e.g., \"Hyvää huomenta, arvoisat asukkaat! Tänään on [Date].\")\n")
+	promptBuilder.WriteString("   * Today's Summary: Include today's weather first, followed by today's calendar events chronologically.\n")
+	promptBuilder.WriteString("   * Upcoming Days: Group information by day (e.g., \"Sunnuntai, 20. huhtikuuta:\"). For each day, list the weather forecast, followed by any relevant calendar events chronologically.\n")
+	promptBuilder.WriteString("   * Closing (e.g., \"Kunnioittavasti, Hovimestarinne.\")\n\n")
+
+	promptBuilder.WriteString("2. **Weather:**\n")
+	promptBuilder.WriteString("   * For today's weather, mention the conditions and temperature range. Mention wind speed *only if* it exceeds 5 m/s.\n")
+	promptBuilder.WriteString("   * For upcoming days' weather, mention only the conditions and temperature range.\n")
+	promptBuilder.WriteString("   * If there are changes to weather forecasts compared to previous forecasts, mention these changes in the relevant day's section.\n\n")
+
+	promptBuilder.WriteString("3. **Events:**\n")
+	promptBuilder.WriteString("   * List calendar events chronologically within each day.\n")
+	promptBuilder.WriteString("   * For Sanni's school events, list only the time and subject abbreviation (e.g., \"09:30 KS\"). Clearly group these under a heading like \"Sannin lukujärjestys:\" or similar for the relevant days.\n")
+	promptBuilder.WriteString("   * Mention who events pertain to when relevant (e.g., \"Riku on Helsingissä.\").\n")
+	promptBuilder.WriteString("   * Simplify event details where necessary for clarity, focusing on the essential information (what, when, where if applicable).\n\n")
+
+	promptBuilder.WriteString("4. **Tone & Language:** Maintain a formal, helpful butler persona. Use Finnish. Use emojis sparingly and appropriately (e.g., for weather).\n\n")
+
+	promptBuilder.WriteString("5. **Birthdays:** If any family members have a birthday today, highlight it prominently with congratulations near the beginning of the brief.\n\n")
 
 	// For debugging purposes, you can print the prompt
 	//fmt.Println("Prompt for Gemini:", promptBuilder.String())
