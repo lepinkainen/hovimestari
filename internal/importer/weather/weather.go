@@ -150,7 +150,7 @@ func DetectForecastChanges(s *store.Store, startDate, endDate time.Time, locatio
 
 		// If they differ, add to changes
 		if newest.Content != previous.Content {
-			changes[dateStr] = fmt.Sprintf("Weather forecast updated: %s", newest.Content)
+			changes[dateStr] = fmt.Sprintf("Weather forecast for %s has been updated.", dateStr)
 		}
 	}
 
