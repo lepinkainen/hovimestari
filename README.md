@@ -48,20 +48,31 @@ cd hovimestari
 2. Install dependencies:
 
 ```bash
-make deps
+task deps
 ```
 
 3. Build the application:
 
 ```bash
-make build
+task build
 ```
+
+### Cross-Compilation for Linux
+
+The application uses a pure Go SQLite implementation via `modernc.org/sqlite`, which doesn't require CGO. This makes cross-compilation simple and straightforward:
+
+```bash
+# Build for Linux
+task build-linux
+```
+
+No additional dependencies or cross-compilers are needed, making it easy to build for any platform from any platform.
 
 4. Initialize the configuration:
 
 ```bash
 # Using environment variables
-GEMINI_API_KEY="YOUR_GEMINI_API_KEY" WEBCAL_URL="YOUR_WEBCAL_URL" make init-config
+GEMINI_API_KEY="YOUR_GEMINI_API_KEY" WEBCAL_URL="YOUR_WEBCAL_URL" task init-config
 
 # Or directly with the CLI
 ./hovimestari init-config --gemini-api-key="YOUR_GEMINI_API_KEY" --webcal-url="YOUR_WEBCAL_URL"
@@ -81,8 +92,8 @@ You can use the CLI directly or use the provided Makefile targets.
 #### Import Calendar Events
 
 ```bash
-# Using make
-make import-calendar
+# Using Task
+task import-calendar
 
 # Or directly with the CLI
 ./hovimestari import-calendar
@@ -91,8 +102,8 @@ make import-calendar
 #### Generate a Daily Brief
 
 ```bash
-# Using make
-make generate-brief
+# Using Task
+task generate-brief
 
 # Or directly with the CLI
 ./hovimestari generate-brief
@@ -101,29 +112,33 @@ make generate-brief
 #### Add a Memory Manually
 
 ```bash
-# Using make with environment variables
-CONTENT="Remember to buy milk" RELEVANCE_DATE="2025-04-20" SOURCE="manual" make add-memory
+# Using Task with environment variables
+task add-memory CONTENT="Remember to buy milk" RELEVANCE_DATE="2025-04-20" SOURCE="manual"
 
 # Or directly with the CLI
 ./hovimestari add-memory --content="Remember to buy milk" --relevance-date="2025-04-20" --source="manual"
 ```
 
-#### Available Make Targets
+#### Available Task Commands
 
-Run `make help` to see all available targets:
+Run `task --list` to see all available tasks:
 
 ```
-Available targets:
-  build           - Build the application
-  clean           - Clean build artifacts
-  run             - Run the application
-  import-calendar - Import calendar events
-  generate-brief  - Generate a daily brief
-  init-config     - Initialize the configuration (requires GEMINI_API_KEY and WEBCAL_URL)
-  add-memory      - Add a memory (requires CONTENT, optional RELEVANCE_DATE and SOURCE)
-  deps            - Install dependencies
-  test            - Run tests
-  help            - Show this help message
+task: Available tasks for this project:
+* add-memory:       Add a memory (reads CONTENT, RELEVANCE_DATE, SOURCE from env/args)
+* build:            Build the Go application for the current OS/ARCH
+* build-linux:      Build the Go application for Linux AMD64
+* clean:            Clean build artifacts
+* default:          Build the application (default task)
+* deps:             Tidy Go module dependencies
+* generate-brief:   Generate a daily brief
+* import-calendar:  Import calendar events
+* import-weather:   Import weather forecasts
+* init-config:      Initialize the configuration (reads GEMINI_API_KEY, WEBCAL_URL from env)
+* lint:             Run Go linters (requires golangci-lint)
+* run:              Build and run the application
+* test:             Run Go tests
+* upgrade-deps:     Upgrade all dependencies to their latest versions
 ```
 
 ## Configuration
@@ -188,7 +203,7 @@ The project includes unit tests for deterministic functions that don't rely on e
 To run all tests:
 
 ```bash
-make test
+task test
 ```
 
 Or directly with Go:

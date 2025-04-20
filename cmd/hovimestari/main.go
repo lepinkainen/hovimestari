@@ -15,6 +15,9 @@ import (
 	"github.com/shrike/hovimestari/internal/output"
 	"github.com/shrike/hovimestari/internal/store"
 	"github.com/spf13/cobra"
+
+	// Import SQLite driver
+	_ "modernc.org/sqlite"
 )
 
 var (

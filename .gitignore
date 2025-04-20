@@ -33,3 +33,6 @@ config.json
 # OS specific files
 .DS_Store
 Thumbs.db
+
+.task/
+build/

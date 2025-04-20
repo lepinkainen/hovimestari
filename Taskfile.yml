@@ -1,0 +1,170 @@
+version: "3"
+
+vars:
+  FUNCNAME: hovimestari
+  BUILDDIR: build
+  COVERAGE_DIR: coverage
+  BINARY: "{{.BUILDDIR}}/{{.FUNCNAME}}"
+  CMD_PATH: ./cmd/hovimestari
+
+# Load environment variables from .env files if they exist
+# Order matters: later files override earlier ones.
+dotenv:
+  - .env # Project-specific env
+  - "{{.HOME}}/.hovimestari.env" # User-specific env for this project
+  - "{{.HOME}}/.env" # General user env
+
+tasks:
+  default:
+    desc: Build the application (default task)
+    cmds:
+      - task: build
+
+  build:
+    desc: Build the Go application for the current OS/ARCH
+    deps:
+      - clean-build
+    cmds:
+      - mkdir -p {{.BUILDDIR}}
+      - >
+        go build
+        -ldflags="-X main.Version={{.GIT_COMMIT}} -w -s"
+        -o {{.BINARY}} {{.CMD_PATH}}
+    generates:
+      - "{{.BINARY}}"
+    sources:
+      - "{{.CMD_PATH}}/**/*.go"
+      - "internal/**/*.go"
+      - "go.mod"
+    vars:
+      GIT_COMMIT:
+        sh: git rev-parse --short HEAD
+
+  build-linux:
+    desc: Build the Go application for Linux AMD64
+    deps:
+      - clean-linux
+    cmds:
+      - mkdir -p {{.BUILDDIR}}
+      - >
+        GOOS=linux GOARCH=amd64 go build
+        -ldflags="-X main.Version={{.GIT_COMMIT}} -w -s"
+        -o {{.BINARY}}-linux-amd64 {{.CMD_PATH}}
+    generates:
+      - "{{.BINARY}}-linux-amd64"
+    sources:
+      - "{{.CMD_PATH}}/**/*.go"
+      - "internal/**/*.go"
+      - "go.mod"
+    vars:
+      GIT_COMMIT:
+        sh: git rev-parse --short HEAD
+
+  test:
+    desc: Run Go tests
+    # Optional: Add coverage like in the example if desired
+    # cmds:
+    #   - mkdir -p {{.COVERAGE_DIR}}
+    #   - go test -v -race -coverprofile={{.COVERAGE_DIR}}/coverage.out ./...
+    #   - go tool cover -html={{.COVERAGE_DIR}}/coverage.out -o {{.COVERAGE_DIR}}/coverage.html
+    # generates:
+    #   - "{{.COVERAGE_DIR}}/coverage.out"
+    #   - "{{.COVERAGE_DIR}}/coverage.html"
+    cmds:
+      - go test ./...
+    sources:
+      - "**/*.go"
+      - "go.mod"
+
+  lint:
+    desc: Run Go linters (requires golangci-lint)
+    cmds:
+      - golangci-lint run ./...
+    sources:
+      - "**/*.go"
+      - "go.mod"
+    silent: true
+
+  clean:
+    desc: Clean all build artifacts
+    cmds:
+      - rm -rf {{.BUILDDIR}} {{.COVERAGE_DIR}} hovimestari hovimestari-linux-amd64 # Also remove old binary if present
+
+  clean-build:
+    desc: Clean build directory but preserve Linux builds
+    cmds:
+      - rm -f {{.BINARY}} hovimestari # Remove regular build
+
+  clean-linux:
+    desc: Clean Linux build but preserve regular builds
+    cmds:
+      - rm -f {{.BINARY}}-linux-amd64 hovimestari-linux-amd64 # Remove Linux build
+
+  deps:
+    desc: Tidy Go module dependencies
+    cmds:
+      - go mod tidy
+    sources:
+      - go.mod
+    generates:
+      - go.mod
+      - go.sum
+
+  upgrade-deps:
+    desc: Upgrade all dependencies to their latest versions
+    silent: true
+    cmds:
+      - go get -u ./...
+      - go mod tidy
+      - echo "✅ Dependencies upgraded successfully"
+    sources:
+      - go.mod
+      - go.sum
+    generates:
+      - go.mod
+      - go.sum
+
+  run:
+    desc: Build and run the application
+    deps:
+      - build
+    cmds:
+      - "{{.BINARY}}" # Task passes extra arguments automatically
+
+  # --- Application Commands ---
+
+  import-calendar:
+    desc: Import calendar events
+    deps: [build]
+    cmds:
+      - "{{.BINARY}} import-calendar"
+
+  import-weather:
+    desc: Import weather forecasts
+    deps: [build]
+    cmds:
+      - "{{.BINARY}} import-weather"
+
+  generate-brief:
+    desc: Generate a daily brief
+    deps: [build]
+    cmds:
+      - "{{.BINARY}} generate-brief"
+
+  init-config:
+    desc: Initialize the configuration (reads GEMINI_API_KEY, WEBCAL_URL from env)
+    deps: [build]
+    cmds:
+      # Assumes GEMINI_API_KEY and WEBCAL_URL are set in the environment (e.g., via .env)
+      - '{{.BINARY}} init-config --gemini-api-key="$GEMINI_API_KEY" --webcal-url="$WEBCAL_URL"'
+
+  add-memory:
+    desc: Add a memory (reads CONTENT, RELEVANCE_DATE, SOURCE from env/args)
+    deps: [build]
+    cmds:
+      # Task automatically makes command-line vars available as env vars
+      # Example: task add-memory CONTENT="Remember this" RELEVANCE_DATE="2025-04-21"
+      - >
+        {{.BINARY}} add-memory --content="$CONTENT"
+        {{if .RELEVANCE_DATE}}--relevance-date="$RELEVANCE_DATE"{{end}}
+        {{if .SOURCE}}--source="$SOURCE"{{end}}
