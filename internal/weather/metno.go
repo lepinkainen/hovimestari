@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -285,6 +286,114 @@ func GetMultiDayForecast(latitude, longitude float64) ([]DailyForecast, error) {
 	}
 
 	// Return all available days
+	return result, nil
+}
+
+// GetCurrentDayHourlyForecast fetches hourly weather forecasts for the current day
+func GetCurrentDayHourlyForecast(latitude, longitude float64) (string, error) {
+	// Construct the API URL
+	url := fmt.Sprintf("%s?lat=%.6f&lon=%.6f", MetNoAPIURL, latitude, longitude)
+
+	// Create a new request
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set required headers
+	req.Header.Set("User-Agent", UserAgent)
+
+	// Make the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch weather data: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check the response status code
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("API returned non-OK status: %d", resp.StatusCode)
+	}
+
+	// Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Parse the JSON response
+	var forecast MetNoForecast
+	if err := json.Unmarshal(body, &forecast); err != nil {
+		return "", fmt.Errorf("failed to parse weather data: %w", err)
+	}
+
+	// Extract relevant forecast data
+	if len(forecast.Properties.Timeseries) == 0 {
+		return "", fmt.Errorf("no forecast data available")
+	}
+
+	// Get the timezone from the local system
+	loc, err := time.LoadLocation("Local")
+	if err != nil {
+		return "", fmt.Errorf("failed to get local timezone: %w", err)
+	}
+
+	// Get current time in local timezone
+	now := time.Now().In(loc)
+
+	// Calculate the end of the current day
+	endOfDay := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, loc)
+
+	// Collect hourly forecasts for the current day
+	var hourlyForecasts []string
+
+	for _, ts := range forecast.Properties.Timeseries {
+		// Convert to local time
+		localTime := ts.Time.In(loc)
+
+		// Skip entries from previous hours or after today
+		if localTime.Before(now) || localTime.After(endOfDay) {
+			continue
+		}
+
+		// Get temperature
+		temp := ts.Data.Instant.Details.AirTemperature
+
+		// Get weather symbol
+		var symbolCode string
+		if ts.Data.Next1Hours != nil {
+			symbolCode = ts.Data.Next1Hours.Summary.SymbolCode
+		} else if ts.Data.Next6Hours != nil {
+			symbolCode = ts.Data.Next6Hours.Summary.SymbolCode
+		} else if ts.Data.Next12Hours != nil {
+			symbolCode = ts.Data.Next12Hours.Summary.SymbolCode
+		} else {
+			symbolCode = "unknown"
+		}
+
+		// Format the hourly forecast
+		hourlyForecast := fmt.Sprintf("%s: %.0f°C (%s)",
+			localTime.Format("15:04"),
+			temp,
+			symbolCode)
+
+		hourlyForecasts = append(hourlyForecasts, hourlyForecast)
+
+		// Limit to the next 12 hours to keep it concise
+		if len(hourlyForecasts) >= 12 {
+			break
+		}
+	}
+
+	// If no hourly forecasts were found
+	if len(hourlyForecasts) == 0 {
+		return "No hourly forecast data available for today", nil
+	}
+
+	// Join the hourly forecasts with commas
+	result := fmt.Sprintf("Hourly forecast for today: %s", strings.Join(hourlyForecasts, ", "))
+
 	return result, nil
 }
 

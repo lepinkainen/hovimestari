@@ -21,6 +21,7 @@
     "",
     "2. **Weather:**",
     "   * For today's weather, mention the conditions and temperature range. Mention wind speed *only if* it exceeds 5 m/s.",
+    "   * If 'HourlyForecastToday' is provided in the Context section, include it after today's general weather summary, presenting it as an hourly breakdown of the day's weather.",
     "   * For upcoming days' weather, mention only the conditions and temperature range.",
     "   * If there are changes to weather forecasts compared to previous forecasts, mention these changes in the relevant day's section.",
     "",

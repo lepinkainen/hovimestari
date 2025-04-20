@@ -10,6 +10,7 @@ import (
 	weatherimporter "github.com/shrike/hovimestari/internal/importer/weather"
 	"github.com/shrike/hovimestari/internal/llm"
 	"github.com/shrike/hovimestari/internal/store"
+	"github.com/shrike/hovimestari/internal/weather"
 )
 
 // Generator handles generating briefs based on memories
@@ -185,6 +186,14 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 		userInfo["Weather"] = forecast
 	} else {
 		userInfo["Weather"] = "Weather information not available"
+	}
+
+	// Add hourly forecast for today
+	hourlyForecast, err := weather.GetCurrentDayHourlyForecast(g.cfg.Latitude, g.cfg.Longitude)
+	if err != nil {
+		fmt.Printf("Warning: Failed to get hourly forecast: %v\n", err)
+	} else {
+		userInfo["HourlyForecastToday"] = hourlyForecast
 	}
 
 	// Add future weather forecasts if available
