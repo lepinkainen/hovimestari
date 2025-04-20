@@ -472,6 +472,13 @@ func runShowBriefContext(ctx context.Context) error {
 
 // runInitConfig runs the init config command
 func runInitConfig(dbPath, geminiAPIKey, outputFormat string) error {
+	// Check if the configuration file already exists
+	if _, err := os.Stat(configPath); err == nil {
+		return fmt.Errorf("configuration file '%s' already exists - please remove it first if you want to re-initialize", configPath)
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to check if configuration file exists: %w", err)
+	}
+
 	// Create a basic configuration
 	cfg := &config.Config{
 		DBPath:         dbPath,
