@@ -11,6 +11,7 @@ The name "Hovimestari" means "Butler" in Finnish.
 - **Family Information**: Keeps track of family members and their birthdays
 - **Daily Briefs**: Generates personalized daily briefs in Finnish with a formal butler tone
 - **Memory Storage**: Stores all information in a simple SQLite database
+- **Multiple Output Options**: Send briefs to CLI, Discord webhooks, and Telegram bots
 
 ## Overview
 
@@ -21,6 +22,7 @@ Hovimestari is a simple yet powerful personal assistant that:
 3. Generates daily briefs using Google's Gemini AI
 4. Allows manual addition of memories
 5. Uses a formal, butler-like tone in its communications (in Finnish)
+6. Supports multiple output destinations (CLI, Discord, Telegram)
 
 ## Architecture
 
@@ -148,7 +150,18 @@ The configuration is stored in `config.json` by default. You can specify a diffe
       "birthday": "1980-05-15"
     }
   ],
-  "output_format": "cli"
+  "outputs": {
+    "enable_cli": true,
+    "discord_webhook_urls": [
+      "https://discord.com/api/webhooks/your-webhook-id/your-webhook-token"
+    ],
+    "telegram_bots": [
+      {
+        "bot_token": "YOUR_TELEGRAM_BOT_TOKEN",
+        "chat_id": "YOUR_TELEGRAM_CHAT_ID"
+      }
+    ]
+  }
 }
 ```
 
@@ -161,7 +174,10 @@ The configuration is stored in `config.json` by default. You can specify a diffe
 - **timezone**: Your timezone in IANA format (e.g., "Europe/Helsinki")
 - **calendars**: List of calendars to import events from
 - **family**: List of family members with optional birthdays
-- **output_format**: Output format (currently only "cli" is supported)
+- **outputs**: Configuration for multiple output methods:
+  - **enable_cli**: Whether to output to the command line
+  - **discord_webhook_urls**: List of Discord webhook URLs to send briefs to
+  - **telegram_bots**: List of Telegram bot configurations, each with a bot token and chat ID
 
 ## Testing
 
@@ -206,8 +222,7 @@ When adding new functionality to the project, consider writing unit tests for de
 
 ## Future Enhancements
 
-- Telegram integration for sending daily briefs and receiving queries
-- Additional importers (weather, email, etc.)
+- Additional importers (email, news, etc.)
 - Web interface for viewing and managing memories
 - Scheduled execution via cron jobs
 - Expanded test coverage

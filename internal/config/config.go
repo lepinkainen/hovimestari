@@ -21,6 +21,19 @@ type FamilyMember struct {
 	TelegramID string `json:"telegram_id,omitempty"`
 }
 
+// TelegramConfig holds configuration for a Telegram bot
+type TelegramConfig struct {
+	BotToken string `json:"bot_token"`
+	ChatID   string `json:"chat_id"`
+}
+
+// OutputConfig holds configuration for various output methods
+type OutputConfig struct {
+	EnableCLI          bool             `json:"enable_cli"`
+	DiscordWebhookURLs []string         `json:"discord_webhook_urls,omitempty"`
+	TelegramBots       []TelegramConfig `json:"telegram_bots,omitempty"`
+}
+
 // Config holds the application configuration
 type Config struct {
 	// Database configuration
@@ -45,7 +58,8 @@ type Config struct {
 	Family []FamilyMember `json:"family"`
 
 	// Output configuration
-	OutputFormat string `json:"output_format"` // "cli", "telegram", etc.
+	OutputFormat string       `json:"output_format"` // "cli", "telegram", etc. (legacy, use Outputs instead)
+	Outputs      OutputConfig `json:"outputs,omitempty"`
 }
 
 // LoadConfig loads the configuration from the specified file
@@ -88,6 +102,14 @@ func LoadConfig(configPath string) (*Config, error) {
 
 	if modelName := os.Getenv("HOVIMESTARI_GEMINI_MODEL"); modelName != "" {
 		config.GeminiModel = modelName
+	}
+
+	// Set default values for Outputs if not specified
+	if config.Outputs.EnableCLI == false && len(config.Outputs.DiscordWebhookURLs) == 0 && len(config.Outputs.TelegramBots) == 0 {
+		// If no outputs are configured, use the legacy OutputFormat field
+		if config.OutputFormat == "cli" || config.OutputFormat == "" {
+			config.Outputs.EnableCLI = true
+		}
 	}
 
 	// Set default Gemini model if not specified

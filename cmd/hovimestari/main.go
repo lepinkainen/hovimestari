@@ -12,6 +12,7 @@ import (
 	"github.com/shrike/hovimestari/internal/importer/calendar"
 	weatherimporter "github.com/shrike/hovimestari/internal/importer/weather"
 	"github.com/shrike/hovimestari/internal/llm"
+	"github.com/shrike/hovimestari/internal/output"
 	"github.com/shrike/hovimestari/internal/store"
 	"github.com/spf13/cobra"
 )
@@ -264,8 +265,46 @@ func runGenerateBrief(ctx context.Context) error {
 		return fmt.Errorf("failed to generate brief: %w", err)
 	}
 
-	// Print the brief
-	fmt.Println(briefText)
+	// Create a list of outputters based on the configuration
+	var outputters []output.Outputter
+
+	// Add CLI outputter if enabled
+	if cfg.Outputs.EnableCLI || (cfg.OutputFormat == "cli" && len(cfg.Outputs.DiscordWebhookURLs) == 0 && len(cfg.Outputs.TelegramBots) == 0) {
+		outputters = append(outputters, output.NewCLIOutputter())
+	}
+
+	// Add Discord outputters
+	for _, webhookURL := range cfg.Outputs.DiscordWebhookURLs {
+		if webhookURL != "" {
+			outputters = append(outputters, output.NewDiscordOutputter(webhookURL))
+		}
+	}
+
+	// Add Telegram outputters
+	for _, telegramCfg := range cfg.Outputs.TelegramBots {
+		if telegramCfg.BotToken != "" && telegramCfg.ChatID != "" {
+			outputters = append(outputters, output.NewTelegramOutputter(telegramCfg.BotToken, telegramCfg.ChatID))
+		}
+	}
+
+	// If no outputters were configured, default to CLI
+	if len(outputters) == 0 {
+		outputters = append(outputters, output.NewCLIOutputter())
+	}
+
+	// Send the brief to all configured outputters
+	var outputErrors []error
+	for _, outputter := range outputters {
+		if err := outputter.Send(ctx, briefText); err != nil {
+			outputErrors = append(outputErrors, err)
+			fmt.Fprintf(os.Stderr, "Error sending brief: %v\n", err)
+		}
+	}
+
+	// If all outputs failed, return an error
+	if len(outputErrors) > 0 && len(outputErrors) == len(outputters) {
+		return fmt.Errorf("all outputs failed: %v", outputErrors[0])
+	}
 
 	return nil
 }
@@ -453,6 +492,9 @@ func runInitConfig(dbPath, geminiAPIKey, outputFormat string) error {
 				Name:     "Example Person",
 				Birthday: "2000-01-01",
 			},
+		},
+		Outputs: config.OutputConfig{
+			EnableCLI: outputFormat == "cli" || outputFormat == "",
 		},
 	}
 
