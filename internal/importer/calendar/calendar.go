@@ -113,13 +113,14 @@ func formatEvent(event *gocal.Event) string {
 	// Add the event summary
 	builder.WriteString(fmt.Sprintf("Calendar Event: %s", event.Summary))
 
-	// Add the event time
-	if !event.Start.IsZero() {
+	// Add the event time, checking for nil pointers first
+	if event.Start != nil && !event.Start.IsZero() {
 		startTime := event.Start.Format("2006-01-02 15:04")
 
-		if !event.End.IsZero() {
+		if event.End != nil && !event.End.IsZero() {
 			endTime := event.End.Format("15:04")
-			if event.Start.Day() != event.End.Day() {
+			// Also check Start is not nil here for safety, though outer check should cover it
+			if event.Start != nil && event.Start.Day() != event.End.Day() {
 				endTime = event.End.Format("2006-01-02 15:04")
 			}
 			builder.WriteString(fmt.Sprintf(" from %s to %s", startTime, endTime))

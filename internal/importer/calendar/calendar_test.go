@@ -1,7 +1,6 @@
 package calendar
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -56,47 +55,6 @@ func TestNewImporterURLConversion(t *testing.T) {
 			}
 		})
 	}
-}
-
-// mockFormatEvent is a copy of the formatEvent function for testing
-// This is needed because the original function assumes non-nil pointers
-func mockFormatEvent(event *gocal.Event) string {
-	var builder strings.Builder
-
-	// Add the event summary
-	builder.WriteString(fmt.Sprintf("Calendar Event: %s", event.Summary))
-
-	// Add the event time
-	if event.Start != nil && !event.Start.IsZero() {
-		startTime := event.Start.Format("2006-01-02 15:04")
-
-		if event.End != nil && !event.End.IsZero() {
-			endTime := event.End.Format("15:04")
-			if event.Start.Day() != event.End.Day() {
-				endTime = event.End.Format("2006-01-02 15:04")
-			}
-			builder.WriteString(fmt.Sprintf(" from %s to %s", startTime, endTime))
-		} else {
-			builder.WriteString(fmt.Sprintf(" at %s", startTime))
-		}
-	}
-
-	// Add the location if available
-	if event.Location != "" {
-		builder.WriteString(fmt.Sprintf(" at %s", event.Location))
-	}
-
-	// Add the description if available
-	if event.Description != "" {
-		// Truncate long descriptions
-		description := event.Description
-		if len(description) > 200 {
-			description = description[:197] + "..."
-		}
-		builder.WriteString(fmt.Sprintf(". Description: %s", description))
-	}
-
-	return builder.String()
 }
 
 // TestFormatEvent tests the formatEvent function
@@ -174,7 +132,8 @@ func TestFormatEvent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := mockFormatEvent(&tt.event)
+			// Call the actual formatEvent function from calendar.go
+			result := formatEvent(&tt.event)
 			if result != tt.expected {
 				t.Errorf("Expected %q, got %q", tt.expected, result)
 			}
