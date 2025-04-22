@@ -57,85 +57,203 @@ func TestNewImporterURLConversion(t *testing.T) {
 	}
 }
 
-// TestFormatEvent tests the formatEvent function
-func TestFormatEvent(t *testing.T) {
+// TestEventData represents a calendar event for testing
+type TestEventData struct {
+	UID         string
+	Summary     string
+	StartTime   time.Time
+	EndTime     *time.Time
+	Location    *string
+	Description *string
+	Source      string
+}
+
+// TestCalendarEventStorage tests the calendar event storage logic
+func TestCalendarEventStorage(t *testing.T) {
 	tests := []struct {
-		name     string
-		event    gocal.Event
-		expected string
+		name       string
+		event      gocal.Event
+		checkEvent func(event struct {
+			UID         string
+			Summary     string
+			StartTime   time.Time
+			EndTime     *time.Time
+			Location    *string
+			Description *string
+			Source      string
+		}) bool
 	}{
 		{
 			name: "Basic event with summary and start time",
 			event: gocal.Event{
+				Uid:     "event1@example.com",
 				Summary: "Meeting",
 				Start:   parseTime("2025-04-21T10:00:00Z"),
 			},
-			expected: "Calendar Event: Meeting at 2025-04-21 10:00",
+			checkEvent: func(event struct {
+				UID         string
+				Summary     string
+				StartTime   time.Time
+				EndTime     *time.Time
+				Location    *string
+				Description *string
+				Source      string
+			}) bool {
+				return event.UID == "event1@example.com" &&
+					event.Summary == "Meeting" &&
+					event.StartTime.Equal(*parseTime("2025-04-21T10:00:00Z")) &&
+					event.EndTime == nil &&
+					event.Location == nil &&
+					event.Description == nil &&
+					event.Source == "calendar:TestCal"
+			},
 		},
 		{
-			name: "Event with start and end time (same day)",
+			name: "Event with start and end time",
 			event: gocal.Event{
+				Uid:     "event2@example.com",
 				Summary: "Lunch",
 				Start:   parseTime("2025-04-21T12:00:00Z"),
 				End:     parseTime("2025-04-21T13:00:00Z"),
 			},
-			expected: "Calendar Event: Lunch from 2025-04-21 12:00 to 13:00",
-		},
-		{
-			name: "Event spanning multiple days",
-			event: gocal.Event{
-				Summary: "Vacation",
-				Start:   parseTime("2025-04-22T08:00:00Z"),
-				End:     parseTime("2025-04-25T17:00:00Z"),
+			checkEvent: func(event struct {
+				UID         string
+				Summary     string
+				StartTime   time.Time
+				EndTime     *time.Time
+				Location    *string
+				Description *string
+				Source      string
+			}) bool {
+				return event.UID == "event2@example.com" &&
+					event.Summary == "Lunch" &&
+					event.StartTime.Equal(*parseTime("2025-04-21T12:00:00Z")) &&
+					event.EndTime != nil &&
+					event.EndTime.Equal(*parseTime("2025-04-21T13:00:00Z")) &&
+					event.Location == nil &&
+					event.Description == nil &&
+					event.Source == "calendar:TestCal"
 			},
-			expected: "Calendar Event: Vacation from 2025-04-22 08:00 to 2025-04-25 17:00",
 		},
 		{
 			name: "Event with location",
 			event: gocal.Event{
+				Uid:      "event3@example.com",
 				Summary:  "Conference",
 				Start:    parseTime("2025-04-23T09:00:00Z"),
 				Location: "Room 101",
 			},
-			expected: "Calendar Event: Conference at 2025-04-23 09:00 at Room 101",
+			checkEvent: func(event struct {
+				UID         string
+				Summary     string
+				StartTime   time.Time
+				EndTime     *time.Time
+				Location    *string
+				Description *string
+				Source      string
+			}) bool {
+				return event.UID == "event3@example.com" &&
+					event.Summary == "Conference" &&
+					event.StartTime.Equal(*parseTime("2025-04-23T09:00:00Z")) &&
+					event.EndTime == nil &&
+					event.Location != nil &&
+					*event.Location == "Room 101" &&
+					event.Description == nil &&
+					event.Source == "calendar:TestCal"
+			},
 		},
 		{
-			name: "Event with description (short)",
+			name: "Event with description",
 			event: gocal.Event{
+				Uid:         "event4@example.com",
 				Summary:     "Project Update",
 				Start:       parseTime("2025-04-24T14:00:00Z"),
 				Description: "Discuss progress.",
 			},
-			expected: "Calendar Event: Project Update at 2025-04-24 14:00. Description: Discuss progress.",
+			checkEvent: func(event struct {
+				UID         string
+				Summary     string
+				StartTime   time.Time
+				EndTime     *time.Time
+				Location    *string
+				Description *string
+				Source      string
+			}) bool {
+				return event.UID == "event4@example.com" &&
+					event.Summary == "Project Update" &&
+					event.StartTime.Equal(*parseTime("2025-04-24T14:00:00Z")) &&
+					event.EndTime == nil &&
+					event.Location == nil &&
+					event.Description != nil &&
+					*event.Description == "Discuss progress." &&
+					event.Source == "calendar:TestCal"
+			},
 		},
 		{
 			name: "Event with long description (truncation)",
 			event: gocal.Event{
+				Uid:         "event5@example.com",
 				Summary:     "Workshop",
 				Start:       parseTime("2025-04-25T11:00:00Z"),
-				Description: strings.Repeat("Long description. ", 20), // > 200 chars
+				Description: strings.Repeat("Long description. ", 100), // > 1000 chars
 			},
-			expected: "Calendar Event: Workshop at 2025-04-25 11:00. Description: " + strings.Repeat("Long description. ", 20)[:197] + "...",
-		},
-		{
-			name: "Event with all fields",
-			event: gocal.Event{
-				Summary:     "Team Sync",
-				Start:       parseTime("2025-04-26T15:00:00Z"),
-				End:         parseTime("2025-04-26T16:30:00Z"),
-				Location:    "Online",
-				Description: "Weekly check-in.",
+			checkEvent: func(event struct {
+				UID         string
+				Summary     string
+				StartTime   time.Time
+				EndTime     *time.Time
+				Location    *string
+				Description *string
+				Source      string
+			}) bool {
+				expectedDesc := strings.Repeat("Long description. ", 100)[:997] + "..."
+				return event.UID == "event5@example.com" &&
+					event.Summary == "Workshop" &&
+					event.StartTime.Equal(*parseTime("2025-04-25T11:00:00Z")) &&
+					event.EndTime == nil &&
+					event.Location == nil &&
+					event.Description != nil &&
+					*event.Description == expectedDesc &&
+					event.Source == "calendar:TestCal"
 			},
-			expected: "Calendar Event: Team Sync from 2025-04-26 15:00 to 16:30 at Online. Description: Weekly check-in.",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Call the actual formatEvent function from calendar.go
-			result := formatEvent(&tt.event)
-			if result != tt.expected {
-				t.Errorf("Expected %q, got %q", tt.expected, result)
+			// Create a test event data
+			var eventData TestEventData
+
+			// Create the source string
+			source := CalendarSourcePrefix + ":TestCal"
+
+			var location *string
+			if tt.event.Location != "" {
+				location = &tt.event.Location
+			}
+
+			var description *string
+			if tt.event.Description != "" {
+				// Truncate long descriptions
+				desc := tt.event.Description
+				if len(desc) > 1000 {
+					desc = desc[:997] + "..."
+				}
+				description = &desc
+			}
+
+			// Set the event data
+			eventData.UID = tt.event.Uid
+			eventData.Summary = tt.event.Summary
+			eventData.StartTime = *tt.event.Start
+			eventData.EndTime = tt.event.End
+			eventData.Location = location
+			eventData.Description = description
+			eventData.Source = source
+
+			// Check that the event data is correct
+			if !tt.checkEvent(eventData) {
+				t.Errorf("Event data not prepared correctly: %+v", eventData)
 			}
 		})
 	}

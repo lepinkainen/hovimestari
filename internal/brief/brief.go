@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/shrike/hovimestari/internal/config"
-	"github.com/shrike/hovimestari/internal/importer/calendar"
 	weatherimporter "github.com/shrike/hovimestari/internal/importer/weather"
 	"github.com/shrike/hovimestari/internal/llm"
 	"github.com/shrike/hovimestari/internal/store"
@@ -80,76 +79,27 @@ func (g *Generator) getFamilyNames() []string {
 	return familyNames
 }
 
-// findOngoingCalendarEvents identifies calendar events that are currently ongoing
-func (g *Generator) findOngoingCalendarEvents(memories []store.Memory, loc *time.Location, now time.Time) []string {
-	var ongoingEvents []string
-	for _, memory := range memories {
-		// Check if this is a calendar event
-		if strings.HasPrefix(memory.Source, calendar.CalendarSourcePrefix+":") && strings.HasPrefix(memory.Content, calendar.EventFormatPrefix) {
-			// Parse the event content to extract start and end times
-			content := memory.Content
-
-			// Check if the event has a time range
-			if strings.Contains(content, calendar.EventFormatFromSeparator) && strings.Contains(content, calendar.EventFormatToSeparator) {
-				// Extract the start and end times
-				fromIndex := strings.Index(content, calendar.EventFormatFromSeparator)
-				toIndex := strings.Index(content, calendar.EventFormatToSeparator)
-
-				if fromIndex > 0 && toIndex > fromIndex {
-					// Extract the date-time strings
-					timeStr := content[fromIndex+6 : toIndex]
-					endTimeStr := content[toIndex+4:]
-
-					// If end time contains " at ", truncate it
-					if atIndex := strings.Index(endTimeStr, calendar.EventFormatAtSeparator); atIndex > 0 {
-						endTimeStr = endTimeStr[:atIndex]
-					} else if dotIndex := strings.Index(endTimeStr, "."); dotIndex > 0 {
-						// If end time contains ".", truncate it
-						endTimeStr = endTimeStr[:dotIndex]
-					}
-
-					// Parse the start time
-					var startTime time.Time
-					var endTime time.Time
-					var err error
-
-					// Try to parse with different formats
-					startTime, err = time.ParseInLocation("2006-01-02 15:04", timeStr, loc)
-					if err == nil {
-						// Check if end time is just a time (not a full date)
-						if !strings.Contains(endTimeStr, "-") {
-							// End time is just HH:MM, use the same date as start
-							endTime, err = time.ParseInLocation("15:04", endTimeStr, loc)
-							if err == nil {
-								// Combine the start date with the end time
-								endTime = time.Date(
-									startTime.Year(), startTime.Month(), startTime.Day(),
-									endTime.Hour(), endTime.Minute(), 0, 0, loc,
-								)
-							}
-						} else {
-							// End time includes a date
-							endTime, err = time.ParseInLocation("2006-01-02 15:04", endTimeStr, loc)
-						}
-
-						// Check if the event is ongoing
-						if err == nil && now.After(startTime) && now.Before(endTime) {
-							// Extract the event summary
-							summary := content[len(calendar.EventFormatPrefix):fromIndex]
-
-							// Format the ongoing event
-							ongoingEvent := fmt.Sprintf("%s (until %s)",
-								summary,
-								endTime.Format("15:04"),
-							)
-							ongoingEvents = append(ongoingEvents, ongoingEvent)
-						}
-					}
-				}
-			}
-		}
+// getOngoingCalendarEvents retrieves calendar events that are currently ongoing
+func (g *Generator) getOngoingCalendarEvents(now time.Time) ([]string, error) {
+	// Get ongoing calendar events directly from the database
+	events, err := g.store.GetOngoingCalendarEvents(now)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ongoing calendar events: %w", err)
 	}
-	return ongoingEvents
+
+	var ongoingEvents []string
+	for _, event := range events {
+		// Format the ongoing event
+		var endTimeStr string
+		if event.EndTime != nil {
+			endTimeStr = fmt.Sprintf(" (until %s)", event.EndTime.Format("15:04"))
+		}
+
+		ongoingEvent := fmt.Sprintf("%s%s", event.Summary, endTimeStr)
+		ongoingEvents = append(ongoingEvents, ongoingEvent)
+	}
+
+	return ongoingEvents, nil
 }
 
 // getWeatherData fetches weather forecasts and changes
@@ -248,6 +198,59 @@ func (g *Generator) assembleUserInfo(
 	return userInfo
 }
 
+// formatCalendarEventString formats a calendar event as a string for LLM context
+func formatCalendarEventString(event store.CalendarEvent) string {
+	var builder strings.Builder
+
+	// Add the event summary
+	builder.WriteString(fmt.Sprintf("Calendar Event: %s", event.Summary))
+
+	// Add the event time
+	startTime := event.StartTime.Format("2006-01-02 15:04")
+
+	if event.EndTime != nil {
+		endTime := event.EndTime.Format("15:04")
+		// Check if the event spans multiple days
+		if event.StartTime.Day() != event.EndTime.Day() {
+			endTime = event.EndTime.Format("2006-01-02 15:04")
+		}
+		builder.WriteString(fmt.Sprintf(" from %s to %s", startTime, endTime))
+	} else {
+		builder.WriteString(fmt.Sprintf(" at %s", startTime))
+	}
+
+	// Add the location if available
+	if event.Location != nil && *event.Location != "" {
+		builder.WriteString(fmt.Sprintf(" at %s", *event.Location))
+	}
+
+	// Add the description if available
+	if event.Description != nil && *event.Description != "" {
+		builder.WriteString(fmt.Sprintf(". Description: %s", *event.Description))
+	}
+
+	return builder.String()
+}
+
+// getCalendarEventStrings fetches relevant calendar events and formats them as strings
+func (g *Generator) getCalendarEventStrings(startDate, endDate time.Time) ([]string, error) {
+	// Get relevant calendar events
+	events, err := g.store.GetRelevantCalendarEvents(startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get relevant calendar events: %w", err)
+	}
+
+	// Convert events to strings
+	var eventStrings []string
+	for _, event := range events {
+		eventStr := formatCalendarEventString(event)
+		dateInfo := fmt.Sprintf(" (relevant on %s)", event.StartTime.Format("2006-01-02"))
+		eventStrings = append(eventStrings, fmt.Sprintf("%s%s [Source: %s]", eventStr, dateInfo, event.Source))
+	}
+
+	return eventStrings, nil
+}
+
 // BuildBriefContext builds the context for a daily brief without generating it
 func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]string, map[string]string, string, error) {
 	// Get the date range for relevant memories
@@ -261,10 +264,19 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 	endDate := startDate.AddDate(0, 0, daysAhead)
 
 	// Get relevant memories and convert to strings
-	memoryStrings, memories, err := g.getRelevantMemoryStrings(startDate, endDate)
+	memoryStrings, _, err := g.getRelevantMemoryStrings(startDate, endDate)
 	if err != nil {
 		return nil, nil, "", err
 	}
+
+	// Get relevant calendar events and convert to strings
+	calendarEventStrings, err := g.getCalendarEventStrings(startDate, endDate)
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	// Combine memory strings and calendar event strings
+	allMemoryStrings := append(memoryStrings, calendarEventStrings...)
 
 	// Find birthdays for today
 	birthdaysToday := g.findBirthdaysToday(now)
@@ -272,8 +284,13 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 	// Get family names
 	familyNames := g.getFamilyNames()
 
-	// Find ongoing calendar events
-	ongoingEvents := g.findOngoingCalendarEvents(memories, loc, now)
+	// Get ongoing calendar events
+	ongoingEvents, err := g.getOngoingCalendarEvents(now)
+	if err != nil {
+		// Log the error but continue - ongoing events are non-critical
+		fmt.Printf("Warning: %v\n", err)
+		ongoingEvents = []string{}
+	}
 
 	// Get weather data
 	weatherForecasts, forecastChanges, hourlyForecast, err := g.getWeatherData(now, endDate, daysAhead)
@@ -300,7 +317,7 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 		outputLanguage = "Finnish"
 	}
 
-	return memoryStrings, userInfo, outputLanguage, nil
+	return allMemoryStrings, userInfo, outputLanguage, nil
 }
 
 // GenerateDailyBrief generates a daily brief based on memories

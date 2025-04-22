@@ -15,16 +15,6 @@ import (
 const (
 	// CalendarSourcePrefix is the prefix used for calendar memory sources.
 	CalendarSourcePrefix = "calendar"
-	// EventFormatPrefix is the prefix for the event summary in the memory content.
-	EventFormatPrefix = "Calendar Event: "
-	// EventFormatFromSeparator separates the start time in the memory content.
-	EventFormatFromSeparator = " from "
-	// EventFormatToSeparator separates the end time in the memory content.
-	EventFormatToSeparator = " to "
-	// EventFormatAtSeparator separates the time (if no end time) or location.
-	EventFormatAtSeparator = " at "
-	// EventFormatDescriptionSeparator separates the description in the memory content.
-	EventFormatDescriptionSeparator = ". Description: "
 )
 
 // Importer handles importing calendar events from a WebCal URL
@@ -87,17 +77,11 @@ func (i *Importer) Import(ctx context.Context) error {
 
 	// Process the events
 	for _, event := range parser.Events {
-		// Format the event as a memory
-		content := formatEvent(&event)
-
-		// Use the event start time as the relevance date
-		relevanceDate := event.Start
-
-		// Add the memory to the database with the calendar name in the source
+		// Create the source string with the calendar name
 		source := fmt.Sprintf("%s:%s", CalendarSourcePrefix, i.calendarName)
 
 		// Check if this specific event instance already exists in the database
-		exists, err := i.store.MemoryExists(source, event.Uid, *event.Start)
+		exists, err := i.store.CalendarEventExists(source, event.Uid, *event.Start)
 		if err != nil {
 			return fmt.Errorf("failed to check if calendar event exists: %w", err)
 		}
@@ -108,55 +92,38 @@ func (i *Importer) Import(ctx context.Context) error {
 			continue
 		}
 
+		// Prepare event data for storage
+		var location *string
+		if event.Location != "" {
+			location = &event.Location
+		}
+
+		var description *string
+		if event.Description != "" {
+			// Truncate long descriptions
+			desc := event.Description
+			if len(desc) > 1000 {
+				desc = desc[:997] + "..."
+			}
+			description = &desc
+		}
+
 		// Add the event to the database
-		_, err = i.store.AddMemory(content, relevanceDate, source, &event.Uid)
+		_, err = i.store.AddCalendarEvent(
+			event.Uid,
+			event.Summary,
+			*event.Start,
+			event.End,
+			location,
+			description,
+			source,
+		)
 		if err != nil {
 			return fmt.Errorf("failed to add calendar event to database: %w", err)
 		}
 	}
 
 	return nil
-}
-
-// formatEvent formats a calendar event as a memory string
-func formatEvent(event *gocal.Event) string {
-	var builder strings.Builder
-
-	// Add the event summary
-	builder.WriteString(fmt.Sprintf("%s%s", EventFormatPrefix, event.Summary))
-
-	// Add the event time, checking for nil pointers first
-	if event.Start != nil && !event.Start.IsZero() {
-		startTime := event.Start.Format("2006-01-02 15:04")
-
-		if event.End != nil && !event.End.IsZero() {
-			endTime := event.End.Format("15:04")
-			// Also check Start is not nil here for safety, though outer check should cover it
-			if event.Start != nil && event.Start.Day() != event.End.Day() {
-				endTime = event.End.Format("2006-01-02 15:04")
-			}
-			builder.WriteString(fmt.Sprintf("%s%s%s%s", EventFormatFromSeparator, startTime, EventFormatToSeparator, endTime))
-		} else {
-			builder.WriteString(fmt.Sprintf("%s%s", EventFormatAtSeparator, startTime))
-		}
-	}
-
-	// Add the location if available
-	if event.Location != "" {
-		builder.WriteString(fmt.Sprintf("%s%s", EventFormatAtSeparator, event.Location))
-	}
-
-	// Add the description if available
-	if event.Description != "" {
-		// Truncate long descriptions
-		description := event.Description
-		if len(description) > 200 {
-			description = description[:197] + "..."
-		}
-		builder.WriteString(fmt.Sprintf("%s%s", EventFormatDescriptionSeparator, description))
-	}
-
-	return builder.String()
 }
 
 // filterValidEvents filters out iCalendar events that don't have a DTSTAMP field
