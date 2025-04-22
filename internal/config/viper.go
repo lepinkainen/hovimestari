@@ -73,7 +73,7 @@ type Config struct {
 // validateRequiredFields validates that required configuration fields are present
 func validateRequiredFields(config *Config) error {
 	if config.GeminiAPIKey == "" {
-		return fmt.Errorf("Gemini API key is required")
+		return fmt.Errorf("gemini API key is required")
 	}
 	return nil
 }
@@ -347,7 +347,7 @@ func GetConfig() (*Config, error) {
 	}
 
 	// Set default values for Outputs if not specified
-	if cfg.Outputs.EnableCLI == false && len(cfg.Outputs.DiscordWebhookURLs) == 0 && len(cfg.Outputs.TelegramBots) == 0 {
+	if !cfg.Outputs.EnableCLI && len(cfg.Outputs.DiscordWebhookURLs) == 0 && len(cfg.Outputs.TelegramBots) == 0 {
 		// If no outputs are configured, use the legacy OutputFormat field
 		if cfg.OutputFormat == "cli" || cfg.OutputFormat == "" {
 			cfg.Outputs.EnableCLI = true
