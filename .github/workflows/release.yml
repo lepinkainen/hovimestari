@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION_NUMBER=${VERSION#v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION_NUMBER=$VERSION_NUMBER" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Create build directories
+        run: |
+          mkdir -p build
+          mkdir -p release-pkg
+          mkdir -p release-artifacts
+
+      - name: Build for Linux
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+            -ldflags="-X main.Version=${{ steps.get_version.outputs.VERSION_NUMBER }} -w -s" \
+            -o build/hovimestari-linux-amd64 ./cmd/hovimestari
+
+      - name: Build for Windows
+        run: |
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build \
+            -ldflags="-X main.Version=${{ steps.get_version.outputs.VERSION_NUMBER }} -w -s" \
+            -o build/hovimestari-windows-amd64.exe ./cmd/hovimestari
+
+      - name: Build for macOS
+        run: |
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build \
+            -ldflags="-X main.Version=${{ steps.get_version.outputs.VERSION_NUMBER }} -w -s" \
+            -o build/hovimestari-darwin-amd64 ./cmd/hovimestari
+
+      - name: Package Linux build
+        run: |
+          mkdir -p release-pkg/hovimestari-linux-amd64
+          cp build/hovimestari-linux-amd64 release-pkg/hovimestari-linux-amd64/hovimestari
+          cp prompts.json release-pkg/hovimestari-linux-amd64/
+          cp config.example.json release-pkg/hovimestari-linux-amd64/
+          cp README.md release-pkg/hovimestari-linux-amd64/
+          cd release-pkg
+          zip -r ../release-artifacts/hovimestari-${{ steps.get_version.outputs.VERSION_NUMBER }}-linux-amd64.zip hovimestari-linux-amd64
+          cd ..
+
+      - name: Package Windows build
+        run: |
+          mkdir -p release-pkg/hovimestari-windows-amd64
+          cp build/hovimestari-windows-amd64.exe release-pkg/hovimestari-windows-amd64/hovimestari.exe
+          cp prompts.json release-pkg/hovimestari-windows-amd64/
+          cp config.example.json release-pkg/hovimestari-windows-amd64/
+          cp README.md release-pkg/hovimestari-windows-amd64/
+          cd release-pkg
+          zip -r ../release-artifacts/hovimestari-${{ steps.get_version.outputs.VERSION_NUMBER }}-windows-amd64.zip hovimestari-windows-amd64
+          cd ..
+
+      - name: Package macOS build
+        run: |
+          mkdir -p release-pkg/hovimestari-darwin-amd64
+          cp build/hovimestari-darwin-amd64 release-pkg/hovimestari-darwin-amd64/hovimestari
+          cp prompts.json release-pkg/hovimestari-darwin-amd64/
+          cp config.example.json release-pkg/hovimestari-darwin-amd64/
+          cp README.md release-pkg/hovimestari-darwin-amd64/
+          cd release-pkg
+          zip -r ../release-artifacts/hovimestari-${{ steps.get_version.outputs.VERSION_NUMBER }}-darwin-amd64.zip hovimestari-darwin-amd64
+          cd ..
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.get_version.outputs.VERSION }}
+          name: Release ${{ steps.get_version.outputs.VERSION }}
+          artifacts: "release-artifacts/*.zip"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generateReleaseNotes: true
