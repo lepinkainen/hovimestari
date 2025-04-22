@@ -15,19 +15,37 @@ import (
 
 // GenerateBriefCmd returns the generate brief command
 func GenerateBriefCmd() *cobra.Command {
-	var daysAhead int
+	var daysAheadFlag int
 
 	cmd := &cobra.Command{
 		Use:   "generate-brief",
 		Short: "Generate a daily brief",
 		Long:  `Generate a daily brief based on the stored memories.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get the configuration
+			cfg, err := config.GetConfig()
+			if err != nil {
+				return fmt.Errorf("failed to get configuration: %w", err)
+			}
+
+			// Use the flag value if provided, otherwise use the config value
+			daysAhead := cfg.DaysAhead
+
+			if cmd.Flags().Changed("days-ahead") {
+				daysAhead = daysAheadFlag
+			}
+
+			// If neither flag nor config has a value, use the default
+			if daysAhead == 0 {
+				daysAhead = 2
+			}
+
 			return runGenerateBrief(cmd.Context(), daysAhead)
 		},
 	}
 
-	// Add days-ahead flag specifically for brief generation
-	cmd.Flags().IntVar(&daysAhead, "days-ahead", 2, "Number of days ahead to include in the brief")
+	// Add days-ahead flag as an override for the config value
+	cmd.Flags().IntVar(&daysAheadFlag, "days-ahead", 0, "Number of days ahead to include in the brief (overrides config value)")
 
 	return cmd
 }

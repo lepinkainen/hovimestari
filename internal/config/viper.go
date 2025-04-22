@@ -1,15 +1,151 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
+	"time"
 
 	"github.com/shrike/hovimestari/internal/xdg"
 	"github.com/spf13/viper"
 )
+
+// CalendarConfig holds configuration for a calendar source
+type CalendarConfig struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+// FamilyMember represents a family member with optional birthday and Telegram ID
+type FamilyMember struct {
+	Name       string `json:"name"`
+	Birthday   string `json:"birthday,omitempty"` // Format: YYYY-MM-DD
+	TelegramID string `json:"telegram_id,omitempty"`
+}
+
+// TelegramConfig holds configuration for a Telegram bot
+type TelegramConfig struct {
+	BotToken string `json:"bot_token"`
+	ChatID   string `json:"chat_id"`
+}
+
+// OutputConfig holds configuration for various output methods
+type OutputConfig struct {
+	EnableCLI          bool             `json:"enable_cli"`
+	DiscordWebhookURLs []string         `json:"discord_webhook_urls,omitempty"`
+	TelegramBots       []TelegramConfig `json:"telegram_bots,omitempty"`
+}
+
+// Config holds the application configuration
+type Config struct {
+	// Database configuration
+	DBPath string `json:"db_path"`
+
+	// LLM configuration
+	GeminiAPIKey   string `json:"gemini_api_key"`
+	GeminiModel    string `json:"gemini_model,omitempty"` // Gemini model to use (e.g., "gemini-2.0-flash")
+	OutputLanguage string `json:"outputLanguage"`         // Language for LLM responses (e.g., "Finnish", "English")
+	PromptFilePath string `json:"promptFilePath"`         // Path to the prompts.json file
+
+	// Brief configuration
+	DaysAhead int `json:"days_ahead,omitempty"` // Number of days ahead to include in the brief
+
+	// Location configuration
+	LocationName string  `json:"location_name"`
+	Latitude     float64 `json:"latitude"`
+	Longitude    float64 `json:"longitude"`
+	Timezone     string  `json:"timezone"`
+
+	// Calendar configuration
+	Calendars []CalendarConfig `json:"calendars"`
+
+	// Family configuration
+	Family []FamilyMember `json:"family"`
+
+	// Output configuration
+	OutputFormat string       `json:"output_format"` // "cli", "telegram", etc. (legacy, use Outputs instead)
+	Outputs      OutputConfig `json:"outputs,omitempty"`
+}
+
+// validateRequiredFields validates that required configuration fields are present
+func validateRequiredFields(config *Config) error {
+	if config.GeminiAPIKey == "" {
+		return fmt.Errorf("Gemini API key is required")
+	}
+	return nil
+}
+
+// validateLocation validates the location configuration
+func validateLocation(config *Config) error {
+	if config.LocationName == "" {
+		return fmt.Errorf("location_name is required")
+	}
+
+	if config.Latitude < -90 || config.Latitude > 90 {
+		return fmt.Errorf("latitude must be between -90 and 90")
+	}
+
+	if config.Longitude < -180 || config.Longitude > 180 {
+		return fmt.Errorf("longitude must be between -180 and 180")
+	}
+
+	// Validate timezone
+	if config.Timezone == "" {
+		return fmt.Errorf("timezone is required")
+	}
+
+	// Try to load the timezone to validate it
+	_, err := time.LoadLocation(config.Timezone)
+	if err != nil {
+		return fmt.Errorf("invalid timezone: %w", err)
+	}
+
+	return nil
+}
+
+// validateCalendars validates the calendar configurations
+func validateCalendars(config *Config) error {
+	if len(config.Calendars) == 0 {
+		return fmt.Errorf("at least one calendar is required")
+	}
+
+	for i, cal := range config.Calendars {
+		if cal.Name == "" {
+			return fmt.Errorf("calendar %d is missing a name", i+1)
+		}
+		if cal.URL == "" {
+			return fmt.Errorf("calendar %d (%s) is missing a URL", i+1, cal.Name)
+		}
+	}
+
+	return nil
+}
+
+// validateFamily validates the family member configurations
+func validateFamily(config *Config) error {
+	if len(config.Family) == 0 {
+		return fmt.Errorf("at least one family member is required")
+	}
+
+	for i, member := range config.Family {
+		if member.Name == "" {
+			return fmt.Errorf("family member %d is missing a name", i+1)
+		}
+
+		// Validate birthday format if provided
+		if member.Birthday != "" {
+			_, err := time.Parse("2006-01-02", member.Birthday)
+			if err != nil {
+				return fmt.Errorf("invalid birthday format for %s: %w", member.Name, err)
+			}
+		}
+	}
+
+	return nil
+}
 
 // InitViper initializes the Viper configuration system
 // It sets up the search paths for configuration files and loads the configuration
@@ -20,14 +156,26 @@ func InitViper(configFileFlag string) error {
 	viper.SetDefault("gemini_model", "gemini-2.0-flash")
 	viper.SetDefault("output_language", "Finnish")
 	viper.SetDefault("output_format", "cli")
+	viper.SetDefault("days_ahead", 2)
 
 	// Configure environment variable handling
 	viper.SetEnvPrefix("HOVIMESTARI")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
-	// Set up key aliases for inconsistent casing in the config file
-	viper.RegisterAlias("gemini_api_key", "geminiAPIKey")
+	// Bind environment variables to specific keys
+	viper.BindEnv("gemini_api_key", "HOVIMESTARI_GEMINI_API_KEY")
+	viper.BindEnv("gemini_model", "HOVIMESTARI_GEMINI_MODEL")
+	viper.BindEnv("output_format", "HOVIMESTARI_OUTPUT_FORMAT")
+	viper.BindEnv("db_path", "HOVIMESTARI_DB_PATH")
+
+	// Set up key mappings for inconsistent casing in the config file
+	// This maps the JSON keys to the struct field names
+	viper.SetDefault("gemini_api_key", "")
+	viper.SetDefault("output_language", "Finnish")
+	viper.SetDefault("prompt_file_path", "")
+
+	// Handle inconsistent key names in the config file
 	viper.RegisterAlias("outputLanguage", "output_language")
 	viper.RegisterAlias("promptFilePath", "prompt_file_path")
 
@@ -63,9 +211,42 @@ func InitViper(configFileFlag string) error {
 			// Some other error occurred while reading the config file
 			return fmt.Errorf("failed to read configuration file: %w", err)
 		}
+	} else {
+		// Debug output - log the config file that was used
+		slog.Debug("Using config file", "path", viper.ConfigFileUsed())
+
+		// Debug output - log all keys in the config file
+		slog.Debug("Available keys in config")
+		for _, key := range viper.AllKeys() {
+			slog.Debug("Config key", "key", key, "value", viper.Get(key))
+		}
 	}
 
 	return nil
+}
+
+// LoadPrompts loads the prompts from the specified file
+func LoadPrompts(filePath string) (map[string][]string, error) {
+	// If no path is provided, use the default
+	if filePath == "" {
+		filePath = "prompts.json"
+	}
+
+	// Open the file
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open prompts file: %w", err)
+	}
+	defer file.Close()
+
+	// Decode the JSON
+	var prompts map[string][]string
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&prompts); err != nil {
+		return nil, fmt.Errorf("failed to decode prompts file: %w", err)
+	}
+
+	return prompts, nil
 }
 
 // GetConfig returns the configuration from Viper
@@ -74,88 +255,34 @@ func GetConfig() (*Config, error) {
 	// Create an empty Config struct
 	cfg := &Config{}
 
-	// Try to read values directly from the file
-	if configFile := viper.ConfigFileUsed(); configFile != "" {
-		data, err := os.ReadFile(configFile)
-		if err == nil {
-			content := string(data)
+	// Explicitly map Viper keys to struct fields
+	cfg.GeminiAPIKey = viper.GetString("gemini_api_key")
+	cfg.GeminiModel = viper.GetString("gemini_model")
+	cfg.OutputLanguage = viper.GetString("output_language")
+	cfg.PromptFilePath = viper.GetString("prompt_file_path")
+	cfg.DBPath = viper.GetString("db_path")
+	cfg.DaysAhead = viper.GetInt("days_ahead")
+	cfg.LocationName = viper.GetString("location_name")
+	cfg.Latitude = viper.GetFloat64("latitude")
+	cfg.Longitude = viper.GetFloat64("longitude")
+	cfg.Timezone = viper.GetString("timezone")
+	cfg.OutputFormat = viper.GetString("output_format")
 
-			// Extract API key
-			apiKeyPrefix := `"gemini_api_key": "`
-			if idx := strings.Index(content, apiKeyPrefix); idx >= 0 {
-				start := idx + len(apiKeyPrefix)
-				end := strings.Index(content[start:], `"`)
-				if end > 0 {
-					apiKey := content[start : start+end]
-					cfg.GeminiAPIKey = apiKey
-				}
-			}
-
-			// Extract location name
-			locationPrefix := `"location_name": "`
-			if idx := strings.Index(content, locationPrefix); idx >= 0 {
-				start := idx + len(locationPrefix)
-				end := strings.Index(content[start:], `"`)
-				if end > 0 {
-					location := content[start : start+end]
-					cfg.LocationName = location
-				}
-			}
-
-			// Extract latitude
-			latitudePrefix := `"latitude": `
-			if idx := strings.Index(content, latitudePrefix); idx >= 0 {
-				start := idx + len(latitudePrefix)
-				end := strings.IndexAny(content[start:], ",\n}")
-				if end > 0 {
-					latitudeStr := content[start : start+end]
-					if latitude, err := strconv.ParseFloat(latitudeStr, 64); err == nil {
-						cfg.Latitude = latitude
-					}
-				}
-			}
-
-			// Extract longitude
-			longitudePrefix := `"longitude": `
-			if idx := strings.Index(content, longitudePrefix); idx >= 0 {
-				start := idx + len(longitudePrefix)
-				end := strings.IndexAny(content[start:], ",\n}")
-				if end > 0 {
-					longitudeStr := content[start : start+end]
-					if longitude, err := strconv.ParseFloat(longitudeStr, 64); err == nil {
-						cfg.Longitude = longitude
-					}
-				}
-			}
-
-			// Extract timezone
-			timezonePrefix := `"timezone": "`
-			if idx := strings.Index(content, timezonePrefix); idx >= 0 {
-				start := idx + len(timezonePrefix)
-				end := strings.Index(content[start:], `"`)
-				if end > 0 {
-					timezone := content[start : start+end]
-					cfg.Timezone = timezone
-				}
-			}
-
-			// Extract Gemini model
-			modelPrefix := `"gemini_model": "`
-			if idx := strings.Index(content, modelPrefix); idx >= 0 {
-				start := idx + len(modelPrefix)
-				end := strings.Index(content[start:], `"`)
-				if end > 0 {
-					model := content[start : start+end]
-					cfg.GeminiModel = model
-				}
-			}
-		}
+	// For complex types, we need to use Unmarshal
+	if err := viper.UnmarshalKey("calendars", &cfg.Calendars); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal calendars: %w", err)
 	}
 
-	// Unmarshal the Viper configuration into the struct
-	if err := viper.Unmarshal(cfg); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal configuration: %w", err)
+	if err := viper.UnmarshalKey("family", &cfg.Family); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal family: %w", err)
 	}
+
+	if err := viper.UnmarshalKey("outputs", &cfg.Outputs); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal outputs: %w", err)
+	}
+
+	// Debug output
+	slog.Debug("Loaded configuration", "config", cfg)
 
 	// Get the XDG config directory
 	configDir, _ := xdg.GetConfigDir()
@@ -200,7 +327,11 @@ func GetConfig() (*Config, error) {
 
 	// Validate the configuration
 	if err := validateRequiredFields(cfg); err != nil {
-		return nil, err
+		configSource := "environment variables"
+		if foundConfigFile != "" {
+			configSource = fmt.Sprintf("configuration file '%s'", foundConfigFile)
+		}
+		return nil, fmt.Errorf("%w (from %s)", err, configSource)
 	}
 
 	if err := validateLocation(cfg); err != nil {

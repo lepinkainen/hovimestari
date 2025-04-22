@@ -34,3 +34,4 @@
 - For CLI tools use spf13/cobra to generate commands and subcommands
 - Use spf13/viper to manage configuration
 - If Sqlite is used, use modernc.org/sqlite as the library, because it works even when cross-compiled
+- Use slog for logging and fmt.Printf for interactive output
