@@ -1,3 +1,9 @@
+# NOTE
+
+This project has been 99.5% ✨Vibe Coded✨ with [Cline](https://cline.bot), using Gemini 2.5-pro-preview-03-25 for Planning mode and Claude-3-7-sonnet-20250219 for Act mode
+
+The project start was me giving Geoffrey Litt's page (linked below) to Cline and off we went. At this point (v1.0-ish) the context sizes have grown so much that every change costs more than I'm willing to spend. Trying to keep Claude 3.7 on track with prompts is also becoming more and more difficult, so I'll most likely move to coding the ye olde way from here on out.
+
 # Hovimestari - A Personal AI Butler Assistant
 
 Hovimestari is a personal AI butler assistant inspired by the article ["How I Made a Useful AI Assistant with One SQLite Table and a Handful of Cron Jobs"](https://www.geoffreylitt.com/2025/04/12/how-i-made-a-useful-ai-assistant-with-one-sqlite-table-and-a-handful-of-cron-jobs) by Geoffrey Litt.
