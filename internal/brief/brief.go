@@ -30,22 +30,12 @@ func NewGenerator(store *store.Store, llm *llm.Client, cfg *config.Config) *Gene
 	}
 }
 
-// BuildBriefContext builds the context for a daily brief without generating it
-func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]string, map[string]string, string, error) {
-	// Get the date range for relevant memories
-	loc, err := time.LoadLocation(g.cfg.Timezone)
-	if err != nil {
-		return nil, nil, "", fmt.Errorf("failed to load timezone: %w", err)
-	}
-
-	now := time.Now().In(loc)
-	startDate := now
-	endDate := startDate.AddDate(0, 0, daysAhead)
-
+// getRelevantMemoryStrings fetches relevant memories and formats them as strings
+func (g *Generator) getRelevantMemoryStrings(startDate, endDate time.Time) ([]string, []store.Memory, error) {
 	// Get relevant memories
 	memories, err := g.store.GetRelevantMemories(startDate, endDate)
 	if err != nil {
-		return nil, nil, "", fmt.Errorf("failed to get relevant memories: %w", err)
+		return nil, nil, fmt.Errorf("failed to get relevant memories: %w", err)
 	}
 
 	// Convert memories to strings
@@ -58,11 +48,11 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 		memoryStrings = append(memoryStrings, fmt.Sprintf("%s%s [Source: %s]", memory.Content, dateInfo, memory.Source))
 	}
 
-	// Format the current date and time in standard format (LLM will handle translation)
-	formattedDate := now.Format("Monday, 2 January 2006")
-	formattedTime := now.Format("15:04")
+	return memoryStrings, memories, nil
+}
 
-	// Check for birthdays today
+// findBirthdaysToday checks for family members' birthdays on the given date
+func (g *Generator) findBirthdaysToday(now time.Time) []string {
 	var birthdaysToday []string
 	for _, member := range g.cfg.Family {
 		if member.Birthday != "" {
@@ -78,27 +68,20 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 			}
 		}
 	}
+	return birthdaysToday
+}
 
-	// Prepare family names
+// getFamilyNames returns a list of family member names
+func (g *Generator) getFamilyNames() []string {
 	var familyNames []string
 	for _, member := range g.cfg.Family {
 		familyNames = append(familyNames, member.Name)
 	}
+	return familyNames
+}
 
-	// Get weather forecasts from memories
-	// Use the already defined now and endDate variables
-	weatherForecasts, err := weatherimporter.GetLatestForecasts(g.store, now, endDate, g.cfg.LocationName)
-	if err != nil {
-		fmt.Printf("Warning: Failed to get weather forecasts: %v\n", err)
-	}
-
-	// Check for forecast changes
-	forecastChanges, err := weatherimporter.DetectForecastChanges(g.store, now, endDate, g.cfg.LocationName)
-	if err != nil {
-		fmt.Printf("Warning: Failed to detect forecast changes: %v\n", err)
-	}
-
-	// Find ongoing calendar events
+// findOngoingCalendarEvents identifies calendar events that are currently ongoing
+func (g *Generator) findOngoingCalendarEvents(memories []store.Memory, loc *time.Location, now time.Time) []string {
 	var ongoingEvents []string
 	for _, memory := range memories {
 		// Check if this is a calendar event
@@ -166,6 +149,46 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 			}
 		}
 	}
+	return ongoingEvents
+}
+
+// getWeatherData fetches weather forecasts and changes
+func (g *Generator) getWeatherData(now, endDate time.Time, daysAhead int) (map[string]string, map[string]string, string, error) {
+	// Get weather forecasts from memories
+	weatherForecasts, err := weatherimporter.GetLatestForecasts(g.store, now, endDate, g.cfg.LocationName)
+	if err != nil {
+		return nil, nil, "", fmt.Errorf("failed to get weather forecasts: %w", err)
+	}
+
+	// Check for forecast changes
+	forecastChanges, err := weatherimporter.DetectForecastChanges(g.store, now, endDate, g.cfg.LocationName)
+	if err != nil {
+		return weatherForecasts, nil, "", fmt.Errorf("failed to detect forecast changes: %w", err)
+	}
+
+	// Get hourly forecast for today
+	hourlyForecast, err := weather.GetCurrentDayHourlyForecast(g.cfg.Latitude, g.cfg.Longitude)
+	if err != nil {
+		return weatherForecasts, forecastChanges, "", fmt.Errorf("failed to get hourly forecast: %w", err)
+	}
+
+	return weatherForecasts, forecastChanges, hourlyForecast, nil
+}
+
+// assembleUserInfo creates the userInfo map with all relevant information
+func (g *Generator) assembleUserInfo(
+	now time.Time,
+	daysAhead int,
+	familyNames []string,
+	ongoingEvents []string,
+	birthdaysToday []string,
+	weatherForecasts map[string]string,
+	forecastChanges map[string]string,
+	hourlyForecast string,
+) map[string]string {
+	// Format the current date and time in standard format (LLM will handle translation)
+	formattedDate := now.Format("Monday, 2 January 2006")
+	formattedTime := now.Format("15:04")
 
 	// Add user information
 	userInfo := map[string]string{
@@ -189,11 +212,8 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 		userInfo["Weather"] = "Weather information not available"
 	}
 
-	// Add hourly forecast for today
-	hourlyForecast, err := weather.GetCurrentDayHourlyForecast(g.cfg.Latitude, g.cfg.Longitude)
-	if err != nil {
-		fmt.Printf("Warning: Failed to get hourly forecast: %v\n", err)
-	} else {
+	// Add hourly forecast for today if available
+	if hourlyForecast != "" {
 		userInfo["HourlyForecastToday"] = hourlyForecast
 	}
 
@@ -224,6 +244,55 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 	if len(birthdaysToday) > 0 {
 		userInfo["Birthdays"] = strings.Join(birthdaysToday, ", ")
 	}
+
+	return userInfo
+}
+
+// BuildBriefContext builds the context for a daily brief without generating it
+func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]string, map[string]string, string, error) {
+	// Get the date range for relevant memories
+	loc, err := time.LoadLocation(g.cfg.Timezone)
+	if err != nil {
+		return nil, nil, "", fmt.Errorf("failed to load timezone: %w", err)
+	}
+
+	now := time.Now().In(loc)
+	startDate := now
+	endDate := startDate.AddDate(0, 0, daysAhead)
+
+	// Get relevant memories and convert to strings
+	memoryStrings, memories, err := g.getRelevantMemoryStrings(startDate, endDate)
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	// Find birthdays for today
+	birthdaysToday := g.findBirthdaysToday(now)
+
+	// Get family names
+	familyNames := g.getFamilyNames()
+
+	// Find ongoing calendar events
+	ongoingEvents := g.findOngoingCalendarEvents(memories, loc, now)
+
+	// Get weather data
+	weatherForecasts, forecastChanges, hourlyForecast, err := g.getWeatherData(now, endDate, daysAhead)
+	if err != nil {
+		// Log the error but continue - weather data is non-critical
+		fmt.Printf("Warning: %v\n", err)
+	}
+
+	// Assemble the user info map
+	userInfo := g.assembleUserInfo(
+		now,
+		daysAhead,
+		familyNames,
+		ongoingEvents,
+		birthdaysToday,
+		weatherForecasts,
+		forecastChanges,
+		hourlyForecast,
+	)
 
 	// Get output language from config, default to Finnish if not specified
 	outputLanguage := g.cfg.OutputLanguage
