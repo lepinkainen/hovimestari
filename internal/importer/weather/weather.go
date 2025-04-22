@@ -3,6 +3,7 @@ package weather
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/shrike/hovimestari/internal/store"
@@ -136,13 +137,9 @@ func DetectForecastChanges(s *store.Store, startDate, endDate time.Time, locatio
 		}
 
 		// Sort forecasts by creation time (newest first)
-		for i := 0; i < len(forecasts); i++ {
-			for j := i + 1; j < len(forecasts); j++ {
-				if forecasts[i].CreatedAt.Before(forecasts[j].CreatedAt) {
-					forecasts[i], forecasts[j] = forecasts[j], forecasts[i]
-				}
-			}
-		}
+		sort.Slice(forecasts, func(i, j int) bool {
+			return forecasts[i].CreatedAt.After(forecasts[j].CreatedAt)
+		})
 
 		// Compare the newest forecast with the previous one
 		newest := forecasts[0]
