@@ -33,7 +33,72 @@ For detailed project structure, technology stack, and core concepts, refer to `P
 
 ### Adding a New Command
 
-1. Create a new command function in `cmd/hovimestari/main.go`.
-2. Add the command to the root command in the `main` function.
-3. Implement the command's functionality.
+1. Create a new command file in `cmd/hovimestari/commands/` (e.g., `new_command.go`).
+2. Implement the command using the Cobra framework, following the pattern of existing commands.
+3. Add the command to the root command in the `main.go` file.
 4. Update the README.md with the new command.
+
+Example of a new command file structure:
+
+```go
+package commands
+
+import (
+	"fmt"
+
+	"github.com/shrike/hovimestari/internal/config"
+	"github.com/spf13/cobra"
+)
+
+// NewCommandCmd returns the new command
+func NewCommandCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "new-command",
+		Short: "Short description",
+		Long:  `Longer description of the command.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get the configuration
+			cfg, err := config.GetConfig()
+			if err != nil {
+				return fmt.Errorf("failed to get configuration: %w", err)
+			}
+
+			// Implement command functionality
+			return runNewCommand(cmd.Context())
+		},
+	}
+
+	// Add flags if needed
+	// cmd.Flags().StringVar(&flagVar, "flag-name", "", "Flag description")
+
+	return cmd
+}
+
+// runNewCommand implements the command functionality
+func runNewCommand(ctx context.Context) error {
+	// Implement the command logic here
+	return nil
+}
+```
+
+### Working with the Configuration System
+
+The application uses Spf13/Viper for configuration management. When working with configuration:
+
+1. Use `config.GetConfig()` to retrieve the current configuration.
+2. Access configuration values through the returned struct.
+3. For new configuration options:
+   - Add the field to the `Config` struct in `internal/config/viper.go`
+   - Add default values in the `InitViper` function if needed
+   - Add environment variable binding if appropriate
+   - Update validation functions if necessary
+   - Update the example configuration file
+
+### Ollama Integration
+
+When working with Ollama LLM integration:
+
+1. The `docs/llm-ollama.md` file contains comprehensive documentation about Ollama integration.
+2. Configuration should support both Gemini and Ollama as LLM providers.
+3. The LLM interface should be provider-agnostic, allowing seamless switching between providers.
+4. Ensure prompts work well with both Gemini and Ollama models.

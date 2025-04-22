@@ -23,25 +23,46 @@ hovimestari/
 ├── build/                # Build artifacts directory
 ├── cmd/
 │   └── hovimestari/
-│       └── main.go       # Main application entry point and CLI commands
+│       ├── main.go       # Main application entry point
+│       └── commands/     # CLI commands directory
+│           ├── add_memory.go
+│           ├── generate_brief.go
+│           ├── import_calendar.go
+│           ├── import_weather.go
+│           ├── init_config.go
+│           ├── list_models.go
+│           └── show_brief_context.go
 ├── internal/
 │   ├── brief/
 │   │   └── brief.go      # Handles daily brief generation
 │   ├── config/
-│   │   └── config.go     # Configuration management
+│   │   ├── config.go     # Legacy configuration (placeholder)
+│   │   └── viper.go      # Viper-based configuration management
 │   ├── importer/
 │   │   ├── calendar/
-│   │   │   └── calendar.go   # Calendar event importing
+│   │   │   ├── calendar.go   # Calendar event importing
+│   │   │   └── calendar_test.go
 │   │   └── weather/
-│   │       └── weather.go    # Weather forecast importing
+│   │       ├── weather.go    # Weather forecast importing
+│   │       └── weather_test.go
 │   ├── llm/
 │   │   └── gemini.go     # Google Gemini API client
 │   ├── output/
-│   │   └── output.go     # Output handling (CLI, Discord, Telegram)
+│   │   ├── cli.go        # CLI output implementation
+│   │   ├── discord.go    # Discord output implementation
+│   │   ├── output.go     # Output interface and management
+│   │   ├── output_test.go
+│   │   └── telegram.go   # Telegram output implementation
 │   ├── store/
 │   │   └── store.go      # SQLite database operations
-│   └── weather/
-│       └── metno.go      # MET Norway API client
+│   ├── weather/
+│   │   ├── metno.go      # MET Norway API client
+│   │   └── metno_test.go
+│   └── xdg/
+│       └── xdg.go        # XDG Base Directory Specification support
+├── docs/
+│   ├── project-plan.md   # Project planning documentation
+│   └── llm-ollama.md     # Ollama LLM integration documentation
 ├── config.example.json   # Example configuration file
 ├── prompts.json          # LLM prompt templates
 ├── go.mod                # Go module definition
@@ -52,11 +73,23 @@ hovimestari/
 
 ## Key Files
 
-- **cmd/hovimestari/main.go**: Contains the CLI command definitions using Cobra. Defines commands for importing calendar events, importing weather forecasts, generating briefs, adding memories manually, initializing configuration, listing available Gemini models, and showing brief context. Integrates with the output package to send briefs to multiple destinations (CLI, Discord, Telegram).
+- **cmd/hovimestari/main.go**: Main application entry point that initializes the Cobra CLI framework and registers all commands.
+
+- **cmd/hovimestari/commands/**: Directory containing individual command implementations:
+
+  - **add_memory.go**: Command for adding memories manually
+  - **generate_brief.go**: Command for generating daily briefs
+  - **import_calendar.go**: Command for importing calendar events
+  - **import_weather.go**: Command for importing weather forecasts
+  - **init_config.go**: Command for initializing configuration
+  - **list_models.go**: Command for listing available LLM models
+  - **show_brief_context.go**: Command for showing brief context
 
 - **internal/brief/brief.go**: Handles the generation of daily briefs by combining memories from the database with context information (date, time, weather, birthdays, etc.) and sending them to the LLM.
 
-- **internal/config/config.go**: Manages loading and saving application configuration from `config.json`. Defines the configuration structure including database path, API keys, location information, calendars, family members, and output settings.
+- **internal/config/viper.go**: Manages loading and saving application configuration using the Spf13/Viper library. Supports multiple configuration sources (file, environment variables), XDG directory standards, and robust validation. Defines the configuration structure including database path, API keys, location information, calendars, family members, and output settings.
+
+- **internal/config/config.go**: Legacy configuration file, now just a placeholder with all functionality moved to viper.go.
 
 - **internal/importer/calendar/calendar.go**: Fetches and parses calendar events from WebCal URLs and stores them as memories in the database.
 
@@ -64,11 +97,18 @@ hovimestari/
 
 - **internal/llm/gemini.go**: Provides the client for interacting with the Google Gemini API, including methods for generating briefs and responses to user queries.
 
-- **internal/output/output.go**: Implements different output methods for sending briefs to various destinations, including CLI (terminal), Discord (via webhooks), and Telegram (via bot API).
+- **internal/xdg/xdg.go**: Implements support for the XDG Base Directory Specification, providing standardized locations for configuration files and ensuring cross-platform compatibility.
+
+- **internal/output/output.go**: Defines the Outputter interface and implements common output functionality.
+- **internal/output/cli.go**: Implements CLI output for sending briefs to the terminal.
+- **internal/output/discord.go**: Implements Discord output for sending briefs via webhooks.
+- **internal/output/telegram.go**: Implements Telegram output for sending briefs via the bot API.
 
 - **internal/store/store.go**: Manages the SQLite database connection and operations for adding and querying memories.
 
 - **internal/weather/metno.go**: Fetches weather forecasts from the MET Norway Locationforecast API.
+
+- **docs/llm-ollama.md**: Documentation for Ollama LLM integration, providing an alternative to Google Gemini for running LLMs locally.
 
 - **prompts.json**: Contains the prompt templates used for generating briefs and responses to user queries.
 
@@ -112,11 +152,24 @@ Briefs are generated in Finnish with a formal, butler-like tone.
 The application is configured through a `config.json` file with the following key sections:
 
 - **Database**: Path to the SQLite database file
-- **LLM**: Google Gemini API key, model name, and output language
+- **LLM**: Provider (Gemini or Ollama), API key, model name, and output language
 - **Location**: Name, coordinates, and timezone for weather forecasts
 - **Calendars**: List of calendars to import events from
 - **Family**: List of family members with optional birthdays and Telegram IDs
 - **Output**: Configuration for different output methods (CLI, Discord, Telegram)
+
+The configuration system uses Spf13/Viper for robust configuration management, supporting:
+
+- Multiple configuration sources (file, environment variables)
+- XDG Base Directory Specification for standard file locations
+- Comprehensive validation of configuration values
+
+### LLM Providers
+
+The application supports multiple LLM providers:
+
+- **Google Gemini**: Cloud-based LLM service with API key authentication
+- **Ollama**: Local LLM running on the user's machine, providing privacy and offline capabilities
 
 ## Data Flow
 
@@ -130,10 +183,13 @@ graph TD
 
     subgraph Core
         Store[(SQLite DB\nmemories.db)]
-        LLM[Gemini LLM]
+        LLMInterface[LLM Interface]
+        Gemini[Gemini LLM]
+        Ollama[Ollama LLM]
         Config[config.json]
+        Viper[Viper Config]
         Prompts[prompts.json]
-        Output[Output Module]
+        Output[Output Interface]
     end
 
     subgraph Commands
@@ -160,10 +216,16 @@ graph TD
     WeatherImporter -- Stores --> Store
     Manual -- Stores --> Store
 
+    Config --> Viper
+    Viper --> LLMInterface
+    LLMInterface --> Gemini
+    LLMInterface --> Ollama
+
     BriefCmd -- Reads --> Store
-    BriefCmd -- Uses --> LLM
-    BriefCmd -- Reads --> Config
-    LLM -- Reads --> Prompts
+    BriefCmd -- Uses --> LLMInterface
+    BriefCmd -- Reads --> Viper
+    Gemini -- Reads --> Prompts
+    Ollama -- Reads --> Prompts
 
     BriefCmd -- Sends to --> Output
     Output -- Outputs to --> CLI
@@ -211,14 +273,18 @@ The application provides several CLI commands through the Cobra framework:
 - **import-calendar**: Import events from configured WebCal URLs
 - **import-weather**: Import weather forecasts for the configured location
 - **generate-brief**: Generate a daily brief based on stored memories
-  - `--days-ahead`: Number of days ahead to include in the brief (default: 2)
+  - `--days-ahead`: Number of days ahead to include in the brief (overrides config value)
 - **add-memory**: Add a memory manually
 - **init-config**: Initialize the configuration file
   - `--output-format`: Output format (cli, telegram)
-- **list-models**: List available Gemini models
+- **list-models**: List available LLM models (Gemini or Ollama depending on configuration)
 - **show-brief-context**: Show the context that would be sent to the LLM
 
+All commands support a global `--config` flag to specify a custom configuration file path.
+
 ## Configuration File Example
+
+### Standard Configuration (Gemini)
 
 ```json
 {
@@ -227,6 +293,7 @@ The application provides several CLI commands through the Cobra framework:
   "gemini_model": "gemini-2.0-flash",
   "outputLanguage": "Finnish",
   "promptFilePath": "prompts.json",
+  "days_ahead": 2,
   "location_name": "Helsinki",
   "latitude": 60.1699,
   "longitude": 24.9384,
@@ -272,6 +339,39 @@ The application provides several CLI commands through the Cobra framework:
 }
 ```
 
+### Ollama Configuration
+
+```json
+{
+  "db_path": "memories.db",
+  "llm_provider": "ollama",
+  "ollama_url": "http://localhost:11434",
+  "ollama_model": "llama3",
+  "outputLanguage": "Finnish",
+  "promptFilePath": "prompts.json",
+  "days_ahead": 2,
+  "location_name": "Helsinki",
+  "latitude": 60.1699,
+  "longitude": 24.9384,
+  "timezone": "Europe/Helsinki",
+  "calendars": [
+    {
+      "name": "Family Calendar",
+      "url": "webcal://example.com/family-calendar.ics"
+    }
+  ],
+  "family": [
+    {
+      "name": "Matti",
+      "birthday": "1980-05-15"
+    }
+  ],
+  "outputs": {
+    "enable_cli": true
+  }
+}
+```
+
 ## Prompt Structure
 
 Prompts are defined in `prompts.json` and include detailed instructions for the LLM:
@@ -279,4 +379,9 @@ Prompts are defined in `prompts.json` and include detailed instructions for the 
 - **dailyBrief**: Template for generating daily briefs
 - **userQuery**: Template for responding to user queries
 
-Each prompt includes placeholders for dynamic content and specific instructions on tone, structure, and content.
+Each prompt includes placeholders for dynamic content and specific instructions on tone, structure, and content:
+
+- **%CONTEXT%**: Placeholder for context information (date, time, weather, etc.)
+- **%NOTES%**: Placeholder for memories/notes
+- **%LANG%**: Placeholder for output language
+- **%QUERY%**: Placeholder for user queries (in userQuery prompt)
