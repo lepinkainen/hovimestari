@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/shrike/hovimestari/internal/config"
+	"github.com/shrike/hovimestari/internal/importer/calendar"
 	weatherimporter "github.com/shrike/hovimestari/internal/importer/weather"
 	"github.com/shrike/hovimestari/internal/llm"
 	"github.com/shrike/hovimestari/internal/store"
@@ -101,15 +102,15 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 	var ongoingEvents []string
 	for _, memory := range memories {
 		// Check if this is a calendar event
-		if strings.HasPrefix(memory.Source, "calendar:") && strings.HasPrefix(memory.Content, "Calendar Event:") {
+		if strings.HasPrefix(memory.Source, calendar.CalendarSourcePrefix+":") && strings.HasPrefix(memory.Content, calendar.EventFormatPrefix) {
 			// Parse the event content to extract start and end times
 			content := memory.Content
 
 			// Check if the event has a time range
-			if strings.Contains(content, " from ") && strings.Contains(content, " to ") {
+			if strings.Contains(content, calendar.EventFormatFromSeparator) && strings.Contains(content, calendar.EventFormatToSeparator) {
 				// Extract the start and end times
-				fromIndex := strings.Index(content, " from ")
-				toIndex := strings.Index(content, " to ")
+				fromIndex := strings.Index(content, calendar.EventFormatFromSeparator)
+				toIndex := strings.Index(content, calendar.EventFormatToSeparator)
 
 				if fromIndex > 0 && toIndex > fromIndex {
 					// Extract the date-time strings
@@ -117,7 +118,7 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 					endTimeStr := content[toIndex+4:]
 
 					// If end time contains " at ", truncate it
-					if atIndex := strings.Index(endTimeStr, " at "); atIndex > 0 {
+					if atIndex := strings.Index(endTimeStr, calendar.EventFormatAtSeparator); atIndex > 0 {
 						endTimeStr = endTimeStr[:atIndex]
 					} else if dotIndex := strings.Index(endTimeStr, "."); dotIndex > 0 {
 						// If end time contains ".", truncate it
@@ -151,7 +152,7 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 						// Check if the event is ongoing
 						if err == nil && now.After(startTime) && now.Before(endTime) {
 							// Extract the event summary
-							summary := content[len("Calendar Event: "):fromIndex]
+							summary := content[len(calendar.EventFormatPrefix):fromIndex]
 
 							// Format the ongoing event
 							ongoingEvent := fmt.Sprintf("%s (until %s)",

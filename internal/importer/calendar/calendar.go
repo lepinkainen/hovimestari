@@ -12,6 +12,21 @@ import (
 	"github.com/shrike/hovimestari/internal/store"
 )
 
+const (
+	// CalendarSourcePrefix is the prefix used for calendar memory sources.
+	CalendarSourcePrefix = "calendar"
+	// EventFormatPrefix is the prefix for the event summary in the memory content.
+	EventFormatPrefix = "Calendar Event: "
+	// EventFormatFromSeparator separates the start time in the memory content.
+	EventFormatFromSeparator = " from "
+	// EventFormatToSeparator separates the end time in the memory content.
+	EventFormatToSeparator = " to "
+	// EventFormatAtSeparator separates the time (if no end time) or location.
+	EventFormatAtSeparator = " at "
+	// EventFormatDescriptionSeparator separates the description in the memory content.
+	EventFormatDescriptionSeparator = ". Description: "
+)
+
 // Importer handles importing calendar events from a WebCal URL
 type Importer struct {
 	store        *store.Store
@@ -79,7 +94,7 @@ func (i *Importer) Import(ctx context.Context) error {
 		relevanceDate := event.Start
 
 		// Add the memory to the database with the calendar name in the source
-		source := fmt.Sprintf("calendar:%s", i.calendarName)
+		source := fmt.Sprintf("%s:%s", CalendarSourcePrefix, i.calendarName)
 
 		// Check if this specific event instance already exists in the database
 		exists, err := i.store.MemoryExists(source, event.Uid, *event.Start)
@@ -108,7 +123,7 @@ func formatEvent(event *gocal.Event) string {
 	var builder strings.Builder
 
 	// Add the event summary
-	builder.WriteString(fmt.Sprintf("Calendar Event: %s", event.Summary))
+	builder.WriteString(fmt.Sprintf("%s%s", EventFormatPrefix, event.Summary))
 
 	// Add the event time, checking for nil pointers first
 	if event.Start != nil && !event.Start.IsZero() {
@@ -120,15 +135,15 @@ func formatEvent(event *gocal.Event) string {
 			if event.Start != nil && event.Start.Day() != event.End.Day() {
 				endTime = event.End.Format("2006-01-02 15:04")
 			}
-			builder.WriteString(fmt.Sprintf(" from %s to %s", startTime, endTime))
+			builder.WriteString(fmt.Sprintf("%s%s%s%s", EventFormatFromSeparator, startTime, EventFormatToSeparator, endTime))
 		} else {
-			builder.WriteString(fmt.Sprintf(" at %s", startTime))
+			builder.WriteString(fmt.Sprintf("%s%s", EventFormatAtSeparator, startTime))
 		}
 	}
 
 	// Add the location if available
 	if event.Location != "" {
-		builder.WriteString(fmt.Sprintf(" at %s", event.Location))
+		builder.WriteString(fmt.Sprintf("%s%s", EventFormatAtSeparator, event.Location))
 	}
 
 	// Add the description if available
@@ -138,7 +153,7 @@ func formatEvent(event *gocal.Event) string {
 		if len(description) > 200 {
 			description = description[:197] + "..."
 		}
-		builder.WriteString(fmt.Sprintf(". Description: %s", description))
+		builder.WriteString(fmt.Sprintf("%s%s", EventFormatDescriptionSeparator, description))
 	}
 
 	return builder.String()

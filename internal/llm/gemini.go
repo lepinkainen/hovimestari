@@ -9,6 +9,17 @@ import (
 	"google.golang.org/api/option"
 )
 
+const (
+	// PromptContextPlaceholder is the placeholder for context in prompts.
+	PromptContextPlaceholder = "%CONTEXT%"
+	// PromptNotesPlaceholder is the placeholder for notes/memories in prompts.
+	PromptNotesPlaceholder = "%NOTES%"
+	// PromptLanguagePlaceholder is the placeholder for the output language in prompts.
+	PromptLanguagePlaceholder = "%LANG%"
+	// PromptQueryPlaceholder is the placeholder for user queries in prompts.
+	PromptQueryPlaceholder = "%QUERY%"
+)
+
 // Client is a client for the Google Gemini API
 type Client struct {
 	client  *genai.Client
@@ -143,9 +154,9 @@ func (c *Client) BuildBriefPrompt(memories []string, userInfo map[string]string,
 
 	// Create the prompt content with context, memories, and language
 	promptContent := strings.Join(c.prompts["dailyBrief"], "\n")
-	promptContent = strings.ReplaceAll(promptContent, "%CONTEXT%", contextBuilder.String())
-	promptContent = strings.ReplaceAll(promptContent, "%NOTES%", memoryBuilder.String())
-	promptContent = strings.ReplaceAll(promptContent, "%LANG%", outputLanguage)
+	promptContent = strings.ReplaceAll(promptContent, PromptContextPlaceholder, contextBuilder.String())
+	promptContent = strings.ReplaceAll(promptContent, PromptNotesPlaceholder, memoryBuilder.String())
+	promptContent = strings.ReplaceAll(promptContent, PromptLanguagePlaceholder, outputLanguage)
 
 	return promptContent
 }
@@ -169,9 +180,9 @@ func (c *Client) GenerateResponse(ctx context.Context, query string, memories []
 
 	// Create the prompt content with query, memories, and language
 	promptContent := strings.Join(c.prompts["userQuery"], "\n")
-	promptContent = strings.ReplaceAll(promptContent, "%QUERY%", query)
-	promptContent = strings.ReplaceAll(promptContent, "%NOTES%", memoryBuilder.String())
-	promptContent = strings.ReplaceAll(promptContent, "%LANG%", outputLanguage)
+	promptContent = strings.ReplaceAll(promptContent, PromptQueryPlaceholder, query)
+	promptContent = strings.ReplaceAll(promptContent, PromptNotesPlaceholder, memoryBuilder.String())
+	promptContent = strings.ReplaceAll(promptContent, PromptLanguagePlaceholder, outputLanguage)
 
 	// Generate the response
 	return c.Generate(ctx, "userQuery", outputLanguage, promptContent)
