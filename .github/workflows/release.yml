@@ -5,6 +5,7 @@ on:
     tags:
       - "v[0-9]+.[0-9]+"
       - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -40,12 +41,33 @@ jobs:
         with:
           go-version: "1.24"
 
+      - name: Get latest tag
+        id: get_latest_tag
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          # Fetch all tags
+          git fetch --tags
+
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
       - name: Get version
         id: get_version
         shell: bash
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          VERSION_NUMBER=${VERSION#v}
+          if [[ $GITHUB_EVENT_NAME == 'push' ]]; then
+            # Tag-based trigger
+            VERSION=${GITHUB_REF#refs/tags/}
+            VERSION_NUMBER=${VERSION#v}
+          else
+            # Manual trigger - use latest tag with run number
+            LATEST_TAG=${{ steps.get_latest_tag.outputs.LATEST_TAG }}
+            VERSION="${LATEST_TAG}-${{ github.run_number }}"
+            VERSION_NUMBER="${VERSION#v}"
+          fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "VERSION_NUMBER=$VERSION_NUMBER" >> $GITHUB_OUTPUT
           echo "Building version: $VERSION for ${{ matrix.platform }}"
@@ -67,9 +89,13 @@ jobs:
           cp prompts.json release-pkg/hovimestari-${{ matrix.platform }}-amd64/
           cp config.example.json release-pkg/hovimestari-${{ matrix.platform }}-amd64/
           cp README.md release-pkg/hovimestari-${{ matrix.platform }}-amd64/
-          cd release-pkg
-          zip -r hovimestari-${{ steps.get_version.outputs.VERSION_NUMBER }}-${{ matrix.platform }}-amd64.zip hovimestari-${{ matrix.platform }}-amd64
-          cd ..
+          if [ ${{ matrix.platform }} = "windows" ]; then
+            pwsh -Command "Compress-Archive -Path release-pkg/hovimestari-${{ matrix.platform }}-amd64/* -DestinationPath release-pkg/hovimestari-${{ steps.get_version.outputs.VERSION_NUMBER }}-${{ matrix.platform }}-amd64.zip"
+          else
+            cd release-pkg
+            zip -r hovimestari-${{ steps.get_version.outputs.VERSION_NUMBER }}-${{ matrix.platform }}-amd64.zip hovimestari-${{ matrix.platform }}-amd64
+            cd ..
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -84,13 +110,36 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest tag
+        id: get_latest_tag
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          # Fetch all tags
+          git fetch --tags
+
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
 
       - name: Get version
         id: get_version
         shell: bash
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          VERSION_NUMBER=${VERSION#v}
+          if [[ $GITHUB_EVENT_NAME == 'push' ]]; then
+            # Tag-based trigger
+            VERSION=${GITHUB_REF#refs/tags/}
+            VERSION_NUMBER=${VERSION#v}
+          else
+            # Manual trigger - use latest tag with run number
+            LATEST_TAG=${{ steps.get_latest_tag.outputs.LATEST_TAG }}
+            VERSION="${LATEST_TAG}-${{ github.run_number }}"
+            VERSION_NUMBER="${VERSION#v}"
+          fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "VERSION_NUMBER=$VERSION_NUMBER" >> $GITHUB_OUTPUT
 
