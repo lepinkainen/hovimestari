@@ -8,6 +8,83 @@ import (
 	"time"
 )
 
+// validateRequiredFields validates that required configuration fields are present
+func validateRequiredFields(config *Config) error {
+	if config.GeminiAPIKey == "" {
+		return fmt.Errorf("Gemini API key is required")
+	}
+	return nil
+}
+
+// validateLocation validates the location configuration
+func validateLocation(config *Config) error {
+	if config.LocationName == "" {
+		return fmt.Errorf("location_name is required")
+	}
+
+	if config.Latitude < -90 || config.Latitude > 90 {
+		return fmt.Errorf("latitude must be between -90 and 90")
+	}
+
+	if config.Longitude < -180 || config.Longitude > 180 {
+		return fmt.Errorf("longitude must be between -180 and 180")
+	}
+
+	// Validate timezone
+	if config.Timezone == "" {
+		return fmt.Errorf("timezone is required")
+	}
+
+	// Try to load the timezone to validate it
+	_, err := time.LoadLocation(config.Timezone)
+	if err != nil {
+		return fmt.Errorf("invalid timezone: %w", err)
+	}
+
+	return nil
+}
+
+// validateCalendars validates the calendar configurations
+func validateCalendars(config *Config) error {
+	if len(config.Calendars) == 0 {
+		return fmt.Errorf("at least one calendar is required")
+	}
+
+	for i, cal := range config.Calendars {
+		if cal.Name == "" {
+			return fmt.Errorf("calendar %d is missing a name", i+1)
+		}
+		if cal.URL == "" {
+			return fmt.Errorf("calendar %d (%s) is missing a URL", i+1, cal.Name)
+		}
+	}
+
+	return nil
+}
+
+// validateFamily validates the family member configurations
+func validateFamily(config *Config) error {
+	if len(config.Family) == 0 {
+		return fmt.Errorf("at least one family member is required")
+	}
+
+	for i, member := range config.Family {
+		if member.Name == "" {
+			return fmt.Errorf("family member %d is missing a name", i+1)
+		}
+
+		// Validate birthday format if provided
+		if member.Birthday != "" {
+			_, err := time.Parse("2006-01-02", member.Birthday)
+			if err != nil {
+				return fmt.Errorf("invalid birthday format for %s: %w", member.Name, err)
+			}
+		}
+	}
+
+	return nil
+}
+
 // CalendarConfig holds configuration for a calendar source
 type CalendarConfig struct {
 	Name string `json:"name"`
@@ -117,66 +194,21 @@ func LoadConfig(configPath string) (*Config, error) {
 		config.GeminiModel = "gemini-2.0-flash"
 	}
 
-	// Validate required configuration
-	if config.GeminiAPIKey == "" {
-		return nil, fmt.Errorf("Gemini API key is required")
+	// Validate the configuration
+	if err := validateRequiredFields(config); err != nil {
+		return nil, err
 	}
 
-	// Validate location configuration
-	if config.LocationName == "" {
-		return nil, fmt.Errorf("location_name is required")
+	if err := validateLocation(config); err != nil {
+		return nil, err
 	}
 
-	if config.Latitude < -90 || config.Latitude > 90 {
-		return nil, fmt.Errorf("latitude must be between -90 and 90")
+	if err := validateCalendars(config); err != nil {
+		return nil, err
 	}
 
-	if config.Longitude < -180 || config.Longitude > 180 {
-		return nil, fmt.Errorf("longitude must be between -180 and 180")
-	}
-
-	// Validate timezone
-	if config.Timezone == "" {
-		return nil, fmt.Errorf("timezone is required")
-	}
-
-	// Try to load the timezone to validate it
-	_, err := time.LoadLocation(config.Timezone)
-	if err != nil {
-		return nil, fmt.Errorf("invalid timezone: %w", err)
-	}
-
-	// Validate calendars
-	if len(config.Calendars) == 0 {
-		return nil, fmt.Errorf("at least one calendar is required")
-	}
-
-	for i, cal := range config.Calendars {
-		if cal.Name == "" {
-			return nil, fmt.Errorf("calendar %d is missing a name", i+1)
-		}
-		if cal.URL == "" {
-			return nil, fmt.Errorf("calendar %d (%s) is missing a URL", i+1, cal.Name)
-		}
-	}
-
-	// Validate family members
-	if len(config.Family) == 0 {
-		return nil, fmt.Errorf("at least one family member is required")
-	}
-
-	for i, member := range config.Family {
-		if member.Name == "" {
-			return nil, fmt.Errorf("family member %d is missing a name", i+1)
-		}
-
-		// Validate birthday format if provided
-		if member.Birthday != "" {
-			_, err := time.Parse("2006-01-02", member.Birthday)
-			if err != nil {
-				return nil, fmt.Errorf("invalid birthday format for %s: %w", member.Name, err)
-			}
-		}
+	if err := validateFamily(config); err != nil {
+		return nil, err
 	}
 
 	// Ensure DB path is absolute

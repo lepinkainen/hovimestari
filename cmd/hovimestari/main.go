@@ -22,7 +22,6 @@ import (
 
 var (
 	configPath string
-	daysAhead  int
 )
 
 func main() {
@@ -82,12 +81,14 @@ func importWeatherCmd() *cobra.Command {
 
 // generateBriefCmd returns the generate brief command
 func generateBriefCmd() *cobra.Command {
+	var daysAhead int
+
 	cmd := &cobra.Command{
 		Use:   "generate-brief",
 		Short: "Generate a daily brief",
 		Long:  `Generate a daily brief based on the stored memories.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runGenerateBrief(cmd.Context())
+			return runGenerateBrief(cmd.Context(), daysAhead)
 		},
 	}
 
@@ -149,7 +150,9 @@ func initConfigCmd() *cobra.Command {
 	return cmd
 }
 
-// runImportCalendar runs the import calendar command
+// runImportCalendar runs the import calendar command, fetching events from all configured
+// WebCal URLs and storing them as memories in the database. Each event is stored with
+// its relevance date set to the event's start time.
 func runImportCalendar(ctx context.Context) error {
 	// Load the configuration
 	cfg, err := config.LoadConfig(configPath)
@@ -186,7 +189,9 @@ func runImportCalendar(ctx context.Context) error {
 	return nil
 }
 
-// runImportWeather runs the import weather command
+// runImportWeather runs the import weather command, fetching weather forecasts for the
+// configured location and storing them as memories in the database. Each forecast is
+// stored with its relevance date set to the forecast date.
 func runImportWeather(ctx context.Context) error {
 	// Load the configuration
 	cfg, err := config.LoadConfig(configPath)
@@ -220,8 +225,11 @@ func runImportWeather(ctx context.Context) error {
 	return nil
 }
 
-// runGenerateBrief runs the generate brief command
-func runGenerateBrief(ctx context.Context) error {
+// runGenerateBrief runs the generate brief command, generating a daily brief based on
+// memories stored in the database. It retrieves relevant memories for the current date
+// and the specified number of days ahead, then uses the LLM to generate a natural language
+// brief. The brief is then sent to all configured output channels (CLI, Discord, Telegram).
+func runGenerateBrief(ctx context.Context, daysAhead int) error {
 	// Load the configuration
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
@@ -312,7 +320,10 @@ func runGenerateBrief(ctx context.Context) error {
 	return nil
 }
 
-// runAddMemory runs the add memory command
+// runAddMemory runs the add memory command, adding a new memory to the database with
+// the specified content, relevance date, and source. The relevance date is optional
+// and can be provided in YYYY-MM-DD format. If not provided, the memory will be
+// considered relevant for all dates.
 func runAddMemory(ctx context.Context, content, relevanceDateStr, source string) error {
 	// Load the configuration
 	cfg, err := config.LoadConfig(configPath)
@@ -366,7 +377,9 @@ func listModelsCmd() *cobra.Command {
 	return cmd
 }
 
-// runListModels runs the list models command
+// runListModels runs the list models command, querying the Gemini API for available
+// models and displaying them to the user. It also shows the currently configured model
+// from the configuration file.
 func runListModels(ctx context.Context) error {
 	// Load the configuration
 	cfg, err := config.LoadConfig(configPath)
@@ -396,12 +409,14 @@ func runListModels(ctx context.Context) error {
 
 // showBriefContextCmd returns the show brief context command
 func showBriefContextCmd() *cobra.Command {
+	var daysAhead int
+
 	cmd := &cobra.Command{
 		Use:   "show-brief-context",
 		Short: "Show the context given to the LLM for brief generation",
 		Long:  `Show the full context that would be given to the LLM when generating a brief, without actually generating the brief.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runShowBriefContext(cmd.Context())
+			return runShowBriefContext(cmd.Context(), daysAhead)
 		},
 	}
 
@@ -411,8 +426,11 @@ func showBriefContextCmd() *cobra.Command {
 	return cmd
 }
 
-// runShowBriefContext runs the show brief context command
-func runShowBriefContext(ctx context.Context) error {
+// runShowBriefContext runs the show brief context command, building the same context
+// that would be used for brief generation but displaying it to the user instead of
+// sending it to the LLM. This is useful for debugging and understanding what information
+// is included in the brief.
+func runShowBriefContext(ctx context.Context, daysAhead int) error {
 	// Load the configuration
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
@@ -470,7 +488,10 @@ func runShowBriefContext(ctx context.Context) error {
 	return nil
 }
 
-// runInitConfig runs the init config command
+// runInitConfig runs the init config command, creating a new configuration file with
+// default values and the provided API key, database path, and output format. It sets
+// up a basic configuration with example calendar and family member entries that the
+// user can edit manually. The function prevents overwriting an existing configuration.
 func runInitConfig(dbPath, geminiAPIKey, outputFormat string) error {
 	// Check if the configuration file already exists
 	if _, err := os.Stat(configPath); err == nil {

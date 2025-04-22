@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time" // Required for time.Time handling
 
 	"github.com/apognu/gocal"
 	"github.com/shrike/hovimestari/internal/store"
@@ -66,8 +65,6 @@ func (i *Importer) Import(ctx context.Context) error {
 	// Parse the filtered iCalendar data
 	// No date filtering - import all events
 	parser := gocal.NewParser(strings.NewReader(filteredData))
-	// Use time package explicitly to ensure import is kept
-	_ = time.Now() // This line ensures the time package is used
 	err = parser.Parse()
 	if err != nil {
 		return fmt.Errorf("failed to parse calendar data: %w", err)

@@ -186,7 +186,7 @@ func ListModels(ctx context.Context, apiKey string) ([]string, error) {
 	}
 	defer client.Close()
 
-	// Try to list the models, but if it fails, return example models
+	// List the models
 	iter := client.ListModels(ctx)
 
 	// Extract model names
@@ -194,24 +194,16 @@ func ListModels(ctx context.Context, apiKey string) ([]string, error) {
 	for {
 		model, err := iter.Next()
 		if err != nil {
-			// If we've reached the end of the iterator or any other error,
-			// just break out of the loop - we'll return example models below
+			// If we've reached the end of the iterator, break out of the loop
 			break
 		}
 		modelNames = append(modelNames, model.Name)
 	}
 
-	// If no models were found (either because the API returned none or there was an error),
-	// add some common models as examples
+	// If no models were found, return a clear error
 	if len(modelNames) == 0 {
-		fmt.Println("No models returned by the API. Showing common model names as examples.")
-		fmt.Println("These may not all be available with your API key or in your region.")
-		fmt.Println()
-
-		modelNames = append(modelNames, "gemini-2.0-flash")
-		modelNames = append(modelNames, "gemini-1.5-flash")
-		modelNames = append(modelNames, "gemini-1.5-pro")
-		modelNames = append(modelNames, "gemini-1.0-pro")
+		return nil, fmt.Errorf("no models returned by the API - this may be due to API limitations, " +
+			"permissions issues, or regional restrictions")
 	}
 
 	return modelNames, nil
