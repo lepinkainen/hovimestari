@@ -41,10 +41,10 @@ func AddMemoryCmd() *cobra.Command {
 // and can be provided in YYYY-MM-DD format. If not provided, the memory will be
 // considered relevant for all dates.
 func runAddMemory(ctx context.Context, content, relevanceDateStr, source string) error {
-	// Load the configuration
-	cfg, err := config.LoadConfig(ConfigPath)
+	// Get the configuration
+	cfg, err := config.GetConfig()
 	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return fmt.Errorf("failed to get configuration: %w", err)
 	}
 
 	// Create the store

@@ -28,10 +28,10 @@ func ImportWeatherCmd() *cobra.Command {
 // configured location and storing them as memories in the database. Each forecast is
 // stored with its relevance date set to the forecast date.
 func runImportWeather(ctx context.Context) error {
-	// Load the configuration
-	cfg, err := config.LoadConfig(ConfigPath)
+	// Get the configuration
+	cfg, err := config.GetConfig()
 	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return fmt.Errorf("failed to get configuration: %w", err)
 	}
 
 	// Create the store

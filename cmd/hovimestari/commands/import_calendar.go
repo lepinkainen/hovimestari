@@ -10,9 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ConfigPath is the path to the configuration file
-var ConfigPath string
-
 // ImportCalendarCmd returns the import calendar command
 func ImportCalendarCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -31,10 +28,10 @@ func ImportCalendarCmd() *cobra.Command {
 // WebCal URLs and storing them as memories in the database. Each event is stored with
 // its relevance date set to the event's start time.
 func runImportCalendar(ctx context.Context) error {
-	// Load the configuration
-	cfg, err := config.LoadConfig(ConfigPath)
+	// Get the configuration
+	cfg, err := config.GetConfig()
 	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return fmt.Errorf("failed to get configuration: %w", err)
 	}
 
 	// Create the store

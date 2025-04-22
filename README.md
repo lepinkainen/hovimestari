@@ -151,7 +151,29 @@ task: Available tasks for this project:
 
 ## Configuration
 
-The configuration is stored in `config.json` by default. You can specify a different path using the `--config` flag.
+### Configuration Files
+
+Hovimestari uses the following configuration files:
+
+- **config.json**: Main configuration file with API keys, location settings, etc.
+- **prompts.json**: Contains the prompts used for generating briefs and responses
+- **memories.db**: SQLite database storing all memories and calendar events
+
+### Configuration File Locations
+
+Hovimestari follows the XDG Base Directory Specification for configuration files. It looks for files in the following order:
+
+1. The path specified with the `--config` flag (for `config.json` only)
+2. `$XDG_CONFIG_HOME/hovimestari/` (usually `~/.config/hovimestari/`)
+3. The directory containing the executable
+
+This makes it easy to run Hovimestari from cron jobs without having to specify the full path to each file.
+
+You can specify a different path for the main configuration file using the `--config` flag:
+
+```bash
+./hovimestari generate-brief --config=/path/to/your/config.json
+```
 
 ```json
 {

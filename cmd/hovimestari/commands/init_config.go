@@ -1,20 +1,22 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/shrike/hovimestari/internal/config"
+	"github.com/shrike/hovimestari/internal/xdg"
 	"github.com/spf13/cobra"
 )
 
 // InitConfigCmd returns the init config command
 func InitConfigCmd() *cobra.Command {
 	var (
-		dbPath       string
 		geminiAPIKey string
 		outputFormat string
+		configPath   string
 	)
 
 	cmd := &cobra.Command{
@@ -22,13 +24,13 @@ func InitConfigCmd() *cobra.Command {
 		Short: "Initialize the configuration",
 		Long:  `Initialize the configuration file with the provided values. Note that this only sets up the basic configuration. You will need to edit the config.json file manually to add calendars, family members, and location information.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runInitConfig(dbPath, geminiAPIKey, outputFormat)
+			return runInitConfig(configPath, geminiAPIKey, outputFormat)
 		},
 	}
 
-	cmd.Flags().StringVar(&dbPath, "db-path", "memories.db", "Path to the database file")
 	cmd.Flags().StringVar(&geminiAPIKey, "gemini-api-key", "", "Google Gemini API key")
 	cmd.Flags().StringVar(&outputFormat, "output-format", "cli", "Output format (cli, telegram)")
+	cmd.Flags().StringVar(&configPath, "config", "", "Path to the configuration file (default: $XDG_CONFIG_HOME/hovimestari/config.json)")
 
 	cmd.MarkFlagRequired("gemini-api-key")
 
@@ -36,25 +38,43 @@ func InitConfigCmd() *cobra.Command {
 }
 
 // runInitConfig runs the init config command, creating a new configuration file with
-// default values and the provided API key, database path, and output format. It sets
-// up a basic configuration with example calendar and family member entries that the
-// user can edit manually. The function prevents overwriting an existing configuration.
-func runInitConfig(dbPath, geminiAPIKey, outputFormat string) error {
+// default values and the provided API key and output format. It sets up a basic configuration
+// with example calendar and family member entries that the user can edit manually.
+// The function prevents overwriting an existing configuration.
+func runInitConfig(configPath, geminiAPIKey, outputFormat string) error {
+	// Determine the target config path
+	targetConfigPath := configPath
+	if targetConfigPath == "" {
+		// If no config path is provided, use the XDG config directory
+		configDir, err := xdg.GetConfigDir()
+		if err != nil {
+			return fmt.Errorf("failed to get XDG config directory: %w", err)
+		}
+		targetConfigPath = filepath.Join(configDir, "config.json")
+	}
+
 	// Check if the configuration file already exists
-	if _, err := os.Stat(ConfigPath); err == nil {
-		return fmt.Errorf("configuration file '%s' already exists - please remove it first if you want to re-initialize", ConfigPath)
+	if _, err := os.Stat(targetConfigPath); err == nil {
+		return fmt.Errorf("configuration file '%s' already exists - please remove it first if you want to re-initialize", targetConfigPath)
 	} else if !os.IsNotExist(err) {
 		return fmt.Errorf("failed to check if configuration file exists: %w", err)
 	}
 
+	// Get the XDG config and data directories
+	configDir, err := xdg.GetConfigDir()
+	if err != nil {
+		return fmt.Errorf("failed to get XDG config directory: %w", err)
+	}
+
 	// Create a basic configuration
 	cfg := &config.Config{
-		DBPath:         dbPath,
+		// Leave DBPath and PromptFilePath empty to use the defaults
+		DBPath:         "",
 		GeminiAPIKey:   geminiAPIKey,
 		GeminiModel:    "gemini-2.0-flash", // Default model
 		OutputFormat:   outputFormat,
 		OutputLanguage: "Finnish",
-		PromptFilePath: "prompts.json",
+		PromptFilePath: "",
 		LocationName:   "Helsinki",
 		Latitude:       60.1699,
 		Longitude:      24.9384,
@@ -77,19 +97,81 @@ func runInitConfig(dbPath, geminiAPIKey, outputFormat string) error {
 	}
 
 	// Ensure the config directory exists
-	configDir := filepath.Dir(ConfigPath)
-	if configDir != "" && configDir != "." {
-		if err := os.MkdirAll(configDir, 0755); err != nil {
+	configFileDir := filepath.Dir(targetConfigPath)
+	if configFileDir != "" && configFileDir != "." {
+		if err := os.MkdirAll(configFileDir, 0755); err != nil {
 			return fmt.Errorf("failed to create config directory: %w", err)
 		}
 	}
 
 	// Save the configuration
-	if err := config.SaveConfig(cfg, ConfigPath); err != nil {
-		return fmt.Errorf("failed to save configuration: %w", err)
+	file, err := os.Create(targetConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to create config file: %w", err)
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(cfg); err != nil {
+		return fmt.Errorf("failed to encode config: %w", err)
 	}
 
-	fmt.Printf("Settings saved to file %s.\n", ConfigPath)
+	// Create a default prompts.json file if it doesn't exist
+	promptsPath := filepath.Join(configDir, "prompts.json")
+	if _, err := os.Stat(promptsPath); os.IsNotExist(err) {
+		// Copy the existing prompts.json file if it exists in the current directory
+		if promptsData, err := os.ReadFile("prompts.json"); err == nil {
+			if err := os.WriteFile(promptsPath, promptsData, 0644); err != nil {
+				return fmt.Errorf("failed to create prompts.json: %w", err)
+			}
+			fmt.Printf("Created prompts.json at %s\n", promptsPath)
+		} else {
+			// If the file doesn't exist, create a basic one
+			basicPrompts := map[string][]string{
+				"dailyBrief": {
+					"You are Hovimestari, a helpful butler assistant. Your task is to generate a daily brief in %LANG% for your user based on the following information:",
+					"",
+					"Context Information:",
+					"%CONTEXT%",
+					"",
+					"Relevant Information:",
+					"%NOTES%",
+					"",
+					"Please generate a concise, well-organized daily brief in %LANG%.",
+				},
+				"userQuery": {
+					"You are Hovimestari, a helpful butler assistant. Your task is to respond to the user's query in %LANG% based on the following information:",
+					"",
+					"User Query: %QUERY%",
+					"",
+					"Relevant Information:",
+					"%NOTES%",
+					"",
+					"Please respond in %LANG% using a formal, butler-like tone.",
+				},
+			}
+
+			promptsFile, err := os.Create(promptsPath)
+			if err != nil {
+				return fmt.Errorf("failed to create prompts.json: %w", err)
+			}
+			defer promptsFile.Close()
+
+			encoder := json.NewEncoder(promptsFile)
+			encoder.SetIndent("", "  ")
+			if err := encoder.Encode(basicPrompts); err != nil {
+				return fmt.Errorf("failed to encode prompts: %w", err)
+			}
+			fmt.Printf("Created default prompts.json at %s\n", promptsPath)
+		}
+	}
+
+	fmt.Printf("Settings saved to file %s.\n", targetConfigPath)
 	fmt.Println("NOTE: Edit the file manually to add the correct calendars, family members, and location information.")
+	fmt.Println("The application will look for configuration files in the following locations:")
+	fmt.Printf("1. The path specified with --config flag\n")
+	fmt.Printf("2. $XDG_CONFIG_HOME/hovimestari/ (usually ~/.config/hovimestari/)\n")
+	fmt.Printf("3. The directory containing the executable\n")
 	return nil
 }

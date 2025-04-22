@@ -27,10 +27,10 @@ func ListModelsCmd() *cobra.Command {
 // models and displaying them to the user. It also shows the currently configured model
 // from the configuration file.
 func runListModels(ctx context.Context) error {
-	// Load the configuration
-	cfg, err := config.LoadConfig(ConfigPath)
+	// Get the configuration
+	cfg, err := config.GetConfig()
 	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return fmt.Errorf("failed to get configuration: %w", err)
 	}
 
 	// List the models

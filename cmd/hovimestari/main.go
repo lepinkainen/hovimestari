@@ -5,14 +5,12 @@ import (
 	"os"
 
 	"github.com/shrike/hovimestari/cmd/hovimestari/commands"
+	"github.com/shrike/hovimestari/internal/config"
 	"github.com/spf13/cobra"
 
 	// Import SQLite driver
 	_ "modernc.org/sqlite"
 )
-
-// ConfigPath is the path to the configuration file, exported for use by commands
-var ConfigPath string
 
 func main() {
 	// Define the root command
@@ -23,12 +21,17 @@ func main() {
 	}
 
 	// Add global flags
-	rootCmd.PersistentFlags().StringVar(&ConfigPath, "config", "config.json", "Path to the configuration file")
+	var configPath string
+	rootCmd.PersistentFlags().StringVar(&configPath, "config", "", "Path to the configuration file")
 
-	// Set up a PersistentPreRun function to set the ConfigPath in the commands package
+	// Set up a PersistentPreRun function to initialize Viper
 	// after the flags have been parsed
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		commands.ConfigPath = ConfigPath
+		// Initialize Viper with the config file path from the flag
+		if err := config.InitViper(configPath); err != nil {
+			fmt.Fprintf(os.Stderr, "Error initializing configuration: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	// Add commands

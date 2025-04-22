@@ -35,10 +35,10 @@ func ShowBriefContextCmd() *cobra.Command {
 // sending it to the LLM. This is useful for debugging and understanding what information
 // is included in the brief.
 func runShowBriefContext(ctx context.Context, daysAhead int) error {
-	// Load the configuration
-	cfg, err := config.LoadConfig(ConfigPath)
+	// Get the configuration
+	cfg, err := config.GetConfig()
 	if err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return fmt.Errorf("failed to get configuration: %w", err)
 	}
 
 	// Create the store
@@ -53,14 +53,8 @@ func runShowBriefContext(ctx context.Context, daysAhead int) error {
 		return fmt.Errorf("failed to initialize store: %w", err)
 	}
 
-	// Determine the prompt file path
-	promptFilePath := cfg.PromptFilePath
-	if promptFilePath == "" {
-		promptFilePath = "prompts.json"
-	}
-
 	// Load the prompts
-	prompts, err := config.LoadPrompts(promptFilePath)
+	prompts, err := config.LoadPrompts(cfg.PromptFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load prompts: %w", err)
 	}
