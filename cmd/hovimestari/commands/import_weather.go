@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/shrike/hovimestari/internal/config"
 	weatherimporter "github.com/shrike/hovimestari/internal/importer/weather"
@@ -46,7 +47,7 @@ func runImportWeather(ctx context.Context) error {
 		return fmt.Errorf("failed to initialize store: %w", err)
 	}
 
-	fmt.Printf("Importing weather forecasts for location '%s'...\n", cfg.LocationName)
+	slog.Info("Importing weather forecasts", "location", cfg.LocationName)
 
 	// Create the weather importer
 	importer := weatherimporter.NewImporter(store, cfg.Latitude, cfg.Longitude, cfg.LocationName)
@@ -56,6 +57,6 @@ func runImportWeather(ctx context.Context) error {
 		return fmt.Errorf("failed to import weather forecasts: %w", err)
 	}
 
-	fmt.Println("Weather forecasts imported successfully.")
+	slog.Info("Weather forecasts imported successfully")
 	return nil
 }

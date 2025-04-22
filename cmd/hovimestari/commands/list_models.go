@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/shrike/hovimestari/internal/config"
 	"github.com/shrike/hovimestari/internal/llm"
@@ -34,7 +35,7 @@ func runListModels(ctx context.Context) error {
 	}
 
 	// List the models
-	fmt.Println("Listing available Gemini models...")
+	slog.Info("Listing available Gemini models")
 	models, err := llm.ListModels(ctx, cfg.GeminiAPIKey)
 	if err != nil {
 		return fmt.Errorf("failed to list models: %w", err)
@@ -48,7 +49,7 @@ func runListModels(ctx context.Context) error {
 
 	// Print the current model
 	fmt.Printf("\nCurrent model configured: %s\n", cfg.GeminiModel)
-	fmt.Println("\nTo change the model, edit the config.json file or set the HOVIMESTARI_GEMINI_MODEL environment variable.")
+	slog.Info("To change the model, edit the config.json file or set the HOVIMESTARI_GEMINI_MODEL environment variable")
 
 	return nil
 }

@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/shrike/hovimestari/internal/config"
 	"github.com/shrike/hovimestari/internal/importer/calendar"
@@ -48,7 +49,7 @@ func runImportCalendar(ctx context.Context) error {
 
 	// Import events from each calendar
 	for _, cal := range cfg.Calendars {
-		fmt.Printf("Importing calendar events from calendar '%s'...\n", cal.Name)
+		slog.Info("Importing calendar events", "calendar", cal.Name)
 
 		// Create the calendar importer
 		importer := calendar.NewImporter(store, cal.URL, cal.Name)
@@ -59,6 +60,6 @@ func runImportCalendar(ctx context.Context) error {
 		}
 	}
 
-	fmt.Println("Calendar events imported successfully.")
+	slog.Info("Calendar events imported successfully")
 	return nil
 }

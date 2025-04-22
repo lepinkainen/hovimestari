@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -125,7 +126,7 @@ func runInitConfig(configPath, geminiAPIKey, outputFormat string) error {
 			if err := os.WriteFile(promptsPath, promptsData, 0644); err != nil {
 				return fmt.Errorf("failed to create prompts.json: %w", err)
 			}
-			fmt.Printf("Created prompts.json at %s\n", promptsPath)
+			slog.Info("Created prompts.json", "path", promptsPath)
 		} else {
 			// If the file doesn't exist, create a basic one
 			basicPrompts := map[string][]string{
@@ -163,15 +164,15 @@ func runInitConfig(configPath, geminiAPIKey, outputFormat string) error {
 			if err := encoder.Encode(basicPrompts); err != nil {
 				return fmt.Errorf("failed to encode prompts: %w", err)
 			}
-			fmt.Printf("Created default prompts.json at %s\n", promptsPath)
+			slog.Info("Created default prompts.json", "path", promptsPath)
 		}
 	}
 
-	fmt.Printf("Settings saved to file %s.\n", targetConfigPath)
-	fmt.Println("NOTE: Edit the file manually to add the correct calendars, family members, and location information.")
-	fmt.Println("The application will look for configuration files in the following locations:")
-	fmt.Printf("1. The path specified with --config flag\n")
-	fmt.Printf("2. $XDG_CONFIG_HOME/hovimestari/ (usually ~/.config/hovimestari/)\n")
-	fmt.Printf("3. The directory containing the executable\n")
+	slog.Info("Settings saved to file", "path", targetConfigPath)
+	slog.Info("NOTE: Edit the file manually to add the correct calendars, family members, and location information")
+	slog.Info("The application will look for configuration files in the following locations:")
+	slog.Info("1. The path specified with --config flag")
+	slog.Info("2. $XDG_CONFIG_HOME/hovimestari/ (usually ~/.config/hovimestari/)")
+	slog.Info("3. The directory containing the executable")
 	return nil
 }

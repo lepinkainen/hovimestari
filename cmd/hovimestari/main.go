@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/shrike/hovimestari/cmd/hovimestari/commands"
@@ -13,6 +13,10 @@ import (
 )
 
 func main() {
+	// Initialize the default logger
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	slog.SetDefault(logger)
+
 	// Define the root command
 	rootCmd := &cobra.Command{
 		Use:   "hovimestari",
@@ -29,7 +33,7 @@ func main() {
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		// Initialize Viper with the config file path from the flag
 		if err := config.InitViper(configPath); err != nil {
-			fmt.Fprintf(os.Stderr, "Error initializing configuration: %v\n", err)
+			slog.Error("Error initializing configuration", "error", err)
 			os.Exit(1)
 		}
 	}
@@ -45,7 +49,7 @@ func main() {
 
 	// Execute the command
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		slog.Error("command execution failed", "error", err)
 		os.Exit(1)
 	}
 }

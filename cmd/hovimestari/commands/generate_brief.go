@@ -3,7 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
-	"os"
+	"log/slog"
 
 	"github.com/shrike/hovimestari/internal/brief"
 	"github.com/shrike/hovimestari/internal/config"
@@ -109,7 +109,7 @@ func runGenerateBrief(ctx context.Context, daysAhead int) error {
 	for _, outputter := range outputters {
 		if err := outputter.Send(ctx, briefText); err != nil {
 			outputErrors = append(outputErrors, err)
-			fmt.Fprintf(os.Stderr, "Error sending brief: %v\n", err)
+			slog.Error("Error sending brief", "error", err)
 		}
 	}
 

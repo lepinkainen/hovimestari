@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/shrike/hovimestari/internal/config"
@@ -75,6 +76,6 @@ func runAddMemory(ctx context.Context, content, relevanceDateStr, source string)
 		return fmt.Errorf("failed to add memory: %w", err)
 	}
 
-	fmt.Printf("Memory added successfully with ID %d.\n", id)
+	slog.Info("Memory added successfully", "id", id)
 	return nil
 }
