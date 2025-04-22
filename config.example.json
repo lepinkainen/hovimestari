@@ -6,6 +6,7 @@
   "latitude": 60.1699,
   "longitude": 24.9384,
   "timezone": "Europe/Helsinki",
+  "days_ahead": 2,
   "calendars": [
     {
       "name": "Family Calendar",
