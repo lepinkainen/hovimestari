@@ -58,22 +58,18 @@ func (i *Importer) Import(ctx context.Context) error {
 		return fmt.Errorf("failed to read calendar data: %w", err)
 	}
 
-	// Pre-filter the iCalendar data to remove events without DTSTAMP
-	filteredData, err := filterValidEvents(string(body))
-	if err != nil {
-		return fmt.Errorf("failed to filter calendar data: %w", err)
-	}
-
-	// Log a summary instead of the entire filtered data to avoid log flooding
-	log.Printf("Calendar data filtered successfully. Ready to parse.")
-
-	// Parse the filtered iCalendar data
+	// Parse the iCalendar data directly without filtering
 	// No date filtering - import all events
-	parser := gocal.NewParser(strings.NewReader(filteredData))
+	parser := gocal.NewParser(strings.NewReader(string(body)))
+	// Set strict mode to fail only events with errors, not the entire feed
+	parser.Strict.Mode = gocal.StrictModeFailEvent
 	err = parser.Parse()
 	if err != nil {
-		return fmt.Errorf("failed to parse calendar data: %w", err)
+		log.Printf("Warning: Some events may have been skipped due to parsing errors: %v", err)
 	}
+
+	// Log the number of events successfully parsed
+	log.Printf("Successfully parsed %d calendar events", len(parser.Events))
 
 	// Process the events
 	for _, event := range parser.Events {
@@ -124,57 +120,4 @@ func (i *Importer) Import(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// filterValidEvents filters out iCalendar events that don't have a DTSTAMP field
-func filterValidEvents(icsData string) (string, error) {
-	// Split the iCalendar data into components
-	// First, ensure we keep the VCALENDAR begin and end tags
-	parts := strings.Split(icsData, "BEGIN:VEVENT")
-
-	if len(parts) <= 1 {
-		// No events found or invalid format
-		return "", fmt.Errorf("no events found in iCalendar data or invalid format")
-	}
-
-	// The first part contains the header (BEGIN:VCALENDAR and other properties)
-	header := parts[0]
-
-	var filteredBuilder strings.Builder
-	filteredBuilder.WriteString(header)
-
-	// Count of valid and invalid events
-	validCount := 0
-	invalidCount := 0
-
-	// Process each event part (skip the first part which is the header)
-	for i := 1; i < len(parts); i++ {
-		eventPart := parts[i]
-
-		// Check if this event has a DTSTAMP field
-		if strings.Contains(eventPart, "DTSTAMP:") {
-			// This event has a DTSTAMP, include it in the filtered data
-			filteredBuilder.WriteString("BEGIN:VEVENT")
-			filteredBuilder.WriteString(eventPart)
-			validCount++
-		} else {
-			// This event is missing DTSTAMP, log and skip it
-			// Extract some identifying information if possible
-			summary := "unknown"
-			if summaryIdx := strings.Index(eventPart, "SUMMARY:"); summaryIdx != -1 {
-				endIdx := strings.Index(eventPart[summaryIdx:], "\n")
-				if endIdx != -1 {
-					summary = eventPart[summaryIdx+8 : summaryIdx+endIdx]
-				}
-			}
-
-			log.Printf("Skipping calendar event due to missing DTSTAMP. Event summary: %s", summary)
-			invalidCount++
-		}
-	}
-
-	// Log the filtering results
-	log.Printf("Calendar filtering results: %d valid events, %d invalid events skipped", validCount, invalidCount)
-
-	return filteredBuilder.String(), nil
 }
