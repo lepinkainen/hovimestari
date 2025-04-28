@@ -103,26 +103,20 @@ func (g *Generator) getOngoingCalendarEvents(now time.Time) ([]string, error) {
 }
 
 // getWeatherData fetches weather forecasts and changes
-func (g *Generator) getWeatherData(now, endDate time.Time, daysAhead int) (map[string]string, map[string]string, string, error) {
+func (g *Generator) getWeatherData(now, endDate time.Time, daysAhead int) (map[string]string, string, error) {
 	// Get weather forecasts from memories
 	weatherForecasts, err := weatherimporter.GetLatestForecasts(g.store, now, endDate, g.cfg.LocationName)
 	if err != nil {
-		return nil, nil, "", fmt.Errorf("failed to get weather forecasts: %w", err)
-	}
-
-	// Check for forecast changes
-	forecastChanges, err := weatherimporter.DetectForecastChanges(g.store, now, endDate, g.cfg.LocationName)
-	if err != nil {
-		return weatherForecasts, nil, "", fmt.Errorf("failed to detect forecast changes: %w", err)
+		return nil, "", fmt.Errorf("failed to get weather forecasts: %w", err)
 	}
 
 	// Get hourly forecast for today
 	hourlyForecast, err := weather.GetCurrentDayHourlyForecast(g.cfg.Latitude, g.cfg.Longitude)
 	if err != nil {
-		return weatherForecasts, forecastChanges, "", fmt.Errorf("failed to get hourly forecast: %w", err)
+		return weatherForecasts, "", fmt.Errorf("failed to get hourly forecast: %w", err)
 	}
 
-	return weatherForecasts, forecastChanges, hourlyForecast, nil
+	return weatherForecasts, hourlyForecast, nil
 }
 
 // assembleUserInfo creates the userInfo map with all relevant information
@@ -133,7 +127,6 @@ func (g *Generator) assembleUserInfo(
 	ongoingEvents []string,
 	birthdaysToday []string,
 	weatherForecasts map[string]string,
-	forecastChanges map[string]string,
 	hourlyForecast string,
 ) map[string]string {
 	// Format the current date and time in standard format (LLM will handle translation)
@@ -167,28 +160,8 @@ func (g *Generator) assembleUserInfo(
 		userInfo["HourlyForecastToday"] = hourlyForecast
 	}
 
-	// Add future weather forecasts if available
-	var futureWeather []string
-	for i := 1; i <= daysAhead; i++ {
-		futureDate := now.AddDate(0, 0, i)
-		dateStr := futureDate.Format("2006-01-02")
-		if forecast, ok := weatherForecasts[dateStr]; ok {
-			futureWeather = append(futureWeather, forecast)
-		}
-	}
-
-	if len(futureWeather) > 0 {
-		userInfo["FutureWeather"] = strings.Join(futureWeather, "\n")
-	}
-
-	// Add forecast changes if any
-	if len(forecastChanges) > 0 {
-		var changes []string
-		for _, change := range forecastChanges {
-			changes = append(changes, change)
-		}
-		userInfo["WeatherChanges"] = strings.Join(changes, "\n")
-	}
+	// Future weather forecasts are already included in the relevant information
+	// so we don't need to add them separately to avoid duplication
 
 	// Add birthdays if any
 	if len(birthdaysToday) > 0 {
@@ -293,7 +266,7 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 	}
 
 	// Get weather data
-	weatherForecasts, forecastChanges, hourlyForecast, err := g.getWeatherData(now, endDate, daysAhead)
+	weatherForecasts, hourlyForecast, err := g.getWeatherData(now, endDate, daysAhead)
 	if err != nil {
 		// Log the error but continue - weather data is non-critical
 		fmt.Printf("Warning: %v\n", err)
@@ -307,7 +280,6 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 		ongoingEvents,
 		birthdaysToday,
 		weatherForecasts,
-		forecastChanges,
 		hourlyForecast,
 	)
 
