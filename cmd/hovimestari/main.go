@@ -6,6 +6,7 @@ import (
 
 	"github.com/shrike/hovimestari/cmd/hovimestari/commands"
 	"github.com/shrike/hovimestari/internal/config"
+	"github.com/shrike/hovimestari/internal/logging"
 	"github.com/spf13/cobra"
 
 	// Import SQLite driver
@@ -13,8 +14,8 @@ import (
 )
 
 func main() {
-	// Initialize the default logger
-	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	// Initialize the default logger with our custom human-readable handler
+	logger := slog.New(logging.NewHumanReadableHandler(os.Stderr, nil))
 	slog.SetDefault(logger)
 
 	// Define the root command

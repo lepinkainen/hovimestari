@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -89,11 +89,11 @@ func (i *Importer) Import(ctx context.Context) error {
 	parser.Strict.Mode = gocal.StrictModeFailEvent
 	err = parser.Parse()
 	if err != nil {
-		log.Printf("Warning: Some events may have been skipped due to parsing errors: %v", err)
+		slog.Warn("Warning: Some events may have been skipped due to parsing errors: %v", "error", err)
 	}
 
 	// Log the number of events successfully parsed
-	log.Printf("Successfully parsed %d calendar events", len(parser.Events))
+	slog.Info("Successfully parsed calendar events", "count", len(parser.Events))
 
 	// Create the source string with the calendar name
 	source := fmt.Sprintf("%s:%s", CalendarSourcePrefix, i.calendarName)
@@ -104,7 +104,7 @@ func (i *Importer) Import(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to delete existing calendar events: %w", err)
 		}
-		log.Printf("Deleted all existing events for calendar: %s", i.calendarName)
+		slog.Info("Deleted all existing events", "calendarname", i.calendarName)
 	}
 
 	// Process the events
@@ -146,7 +146,7 @@ func (i *Importer) Import(ctx context.Context) error {
 				if err != nil {
 					return fmt.Errorf("failed to update calendar event in database: %w", err)
 				}
-				log.Printf("Updated calendar event: %s at %s", event.Summary, event.Start.Format("2006-01-02 15:04"))
+				slog.Info("Updated calendar event: %s at %s", event.Summary, event.Start.Format("2006-01-02 15:04"))
 				continue
 			}
 		}
