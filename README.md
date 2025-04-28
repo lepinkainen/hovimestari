@@ -107,6 +107,8 @@ task import-calendar
 ./hovimestari import-calendar
 ```
 
+Hovimestari supports different update modes for calendar imports, allowing you to choose between "smart" updates for static calendars and "full_refresh" for dynamic ones. See [docs/calendar-import.md](docs/calendar-import.md) for details.
+
 #### Generate a Daily Brief
 
 ```bash
@@ -186,7 +188,13 @@ You can specify a different path for the main configuration file using the `--co
   "calendars": [
     {
       "name": "Family Calendar",
-      "url": "webcal://example.com/calendar.ics"
+      "url": "webcal://example.com/calendar.ics",
+      "update_mode": "full_refresh"
+    },
+    {
+      "name": "Holidays",
+      "url": "https://calendars.icloud.com/holidays/fi_fi.ics/",
+      "update_mode": "smart"
     }
   ],
   "family": [
@@ -218,6 +226,9 @@ You can specify a different path for the main configuration file using the `--co
 - **latitude** and **longitude**: Geographic coordinates for weather forecasts
 - **timezone**: Your timezone in IANA format (e.g., "Europe/Helsinki")
 - **calendars**: List of calendars to import events from
+  - **name**: Name of the calendar
+  - **url**: WebCal URL for the calendar
+  - **update_mode**: Update strategy for the calendar ("smart" or "full_refresh", defaults to "full_refresh")
 - **family**: List of family members with optional birthdays
 - **outputs**: Configuration for multiple output methods:
   - **enable_cli**: Whether to output to the command line

@@ -49,10 +49,10 @@ func runImportCalendar(ctx context.Context) error {
 
 	// Import events from each calendar
 	for _, cal := range cfg.Calendars {
-		slog.Info("Importing calendar events", "calendar", cal.Name)
+		slog.Info("Importing calendar events", "calendar", cal.Name, "update_mode", cal.UpdateMode)
 
 		// Create the calendar importer
-		importer := calendar.NewImporter(store, cal.URL, cal.Name)
+		importer := calendar.NewImporter(store, cal.URL, cal.Name, cal.UpdateMode)
 
 		// Import the calendar events
 		if err := importer.Import(ctx); err != nil {

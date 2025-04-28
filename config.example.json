@@ -10,11 +10,17 @@
   "calendars": [
     {
       "name": "Family Calendar",
-      "url": "webcal://p12-caldav.icloud.com/published/2/MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI"
+      "url": "webcal://p12-caldav.icloud.com/published/2/MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI",
+      "update_mode": "full_refresh"
     },
     {
       "name": "Work Calendar",
-      "url": "webcal://example.com/work-calendar.ics"
+      "url": "webcal://example.com/work-calendar.ics",
+      "update_mode": "smart"
+    },
+    {
+      "name": "Holidays in Finland",
+      "url": "https://calendars.icloud.com/holidays/fi_fi.ics/"
     }
   ],
   "family": [

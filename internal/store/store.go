@@ -263,6 +263,34 @@ func (s *Store) CalendarEventExists(source string, uid string, startTime time.Ti
 	return count > 0, nil
 }
 
+// UpdateCalendarEvent updates an existing calendar event in the database
+func (s *Store) UpdateCalendarEvent(uid, summary string, startTime time.Time, endTime *time.Time, location, description *string, source string) error {
+	query := `
+	UPDATE calendar_events
+	SET summary = ?, end_time = ?, location = ?, description = ?
+	WHERE source = ? AND uid = ? AND start_time = ?
+	`
+
+	_, err := s.db.Exec(query, summary, endTime, location, description, source, uid, startTime)
+	if err != nil {
+		return fmt.Errorf("failed to update calendar event: %w", err)
+	}
+
+	return nil
+}
+
+// DeleteCalendarEventsBySource deletes all calendar events from a specific source
+func (s *Store) DeleteCalendarEventsBySource(source string) error {
+	query := `DELETE FROM calendar_events WHERE source = ?`
+
+	_, err := s.db.Exec(query, source)
+	if err != nil {
+		return fmt.Errorf("failed to delete calendar events: %w", err)
+	}
+
+	return nil
+}
+
 // GetRelevantCalendarEvents retrieves calendar events relevant for a specific date range
 func (s *Store) GetRelevantCalendarEvents(startDate, endDate time.Time) ([]CalendarEvent, error) {
 	// Get events that:

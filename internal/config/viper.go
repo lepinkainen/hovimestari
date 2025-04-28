@@ -15,8 +15,9 @@ import (
 
 // CalendarConfig holds configuration for a calendar source
 type CalendarConfig struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
+	Name       string `json:"name"`
+	URL        string `json:"url"`
+	UpdateMode string `json:"update_mode,omitempty"` // "smart" or "full_refresh"
 }
 
 // FamilyMember represents a family member with optional birthday and Telegram ID
