@@ -103,7 +103,7 @@ func (g *Generator) getOngoingCalendarEvents(now time.Time) ([]string, error) {
 }
 
 // getWeatherData fetches weather forecasts and changes
-func (g *Generator) getWeatherData(now, endDate time.Time, daysAhead int) (map[string]string, string, error) {
+func (g *Generator) getWeatherData(now, endDate time.Time) (map[string]string, string, error) {
 	// Get weather forecasts from memories
 	weatherForecasts, err := weatherimporter.GetLatestForecasts(g.store, now, endDate, g.cfg.LocationName)
 	if err != nil {
@@ -122,7 +122,6 @@ func (g *Generator) getWeatherData(now, endDate time.Time, daysAhead int) (map[s
 // assembleUserInfo creates the userInfo map with all relevant information
 func (g *Generator) assembleUserInfo(
 	now time.Time,
-	daysAhead int,
 	familyNames []string,
 	ongoingEvents []string,
 	birthdaysToday []string,
@@ -266,7 +265,7 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 	}
 
 	// Get weather data
-	weatherForecasts, hourlyForecast, err := g.getWeatherData(now, endDate, daysAhead)
+	weatherForecasts, hourlyForecast, err := g.getWeatherData(now, endDate)
 	if err != nil {
 		// Log the error but continue - weather data is non-critical
 		fmt.Printf("Warning: %v\n", err)
@@ -275,7 +274,6 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 	// Assemble the user info map
 	userInfo := g.assembleUserInfo(
 		now,
-		daysAhead,
 		familyNames,
 		ongoingEvents,
 		birthdaysToday,
