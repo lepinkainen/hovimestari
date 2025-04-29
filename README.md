@@ -177,6 +177,14 @@ You can specify a different path for the main configuration file using the `--co
 ./hovimestari generate-brief --config=/path/to/your/config.json
 ```
 
+You can also control the logging level using the `--log-level` flag:
+
+```bash
+./hovimestari generate-brief --log-level=debug
+```
+
+Valid log levels are: debug, info, warn, error (default is "debug" for the flag, "info" for the config file).
+
 ```json
 {
   "db_path": "memories.db",
@@ -221,6 +229,7 @@ You can specify a different path for the main configuration file using the `--co
 ### Configuration Fields
 
 - **db_path**: Path to the SQLite database file
+- **log_level**: Logging level (debug, info, warn, error) - defaults to "info"
 - **gemini_api_key**: Your Google Gemini API key
 - **location_name**: Name of your location (e.g., "Helsinki")
 - **latitude** and **longitude**: Geographic coordinates for weather forecasts

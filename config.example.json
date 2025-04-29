@@ -2,6 +2,7 @@
   "gemini_api_key": "YOUR_GEMINI_API_KEY",
   "gemini_model": "gemini-2.0-flash",
   "outputLanguage": "Finnish",
+  "log_level": "info",
   "location_name": "Helsinki",
   "latitude": 60.1699,
   "longitude": 24.9384,

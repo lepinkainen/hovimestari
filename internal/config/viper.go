@@ -45,6 +45,9 @@ type Config struct {
 	// Database configuration
 	DBPath string `json:"db_path" mapstructure:"db_path"`
 
+	// Logging configuration
+	LogLevel string `json:"log_level,omitempty" mapstructure:"log_level"` // Log level (debug, info, warn, error)
+
 	// LLM configuration
 	GeminiAPIKey   string `json:"gemini_api_key" mapstructure:"gemini_api_key"`
 	GeminiModel    string `json:"gemini_model,omitempty" mapstructure:"gemini_model"` // Gemini model to use (e.g., "gemini-2.0-flash")
@@ -158,6 +161,7 @@ func InitViper(configFileFlag string) error {
 	viper.SetDefault("output_language", "Finnish")
 	viper.SetDefault("output_format", "cli")
 	viper.SetDefault("days_ahead", 2)
+	viper.SetDefault("log_level", "info")
 
 	// Configure environment variable handling
 	viper.SetEnvPrefix("HOVIMESTARI")
@@ -169,6 +173,7 @@ func InitViper(configFileFlag string) error {
 	viper.BindEnv("gemini_model", "HOVIMESTARI_GEMINI_MODEL")
 	viper.BindEnv("output_format", "HOVIMESTARI_OUTPUT_FORMAT")
 	viper.BindEnv("db_path", "HOVIMESTARI_DB_PATH")
+	viper.BindEnv("log_level", "HOVIMESTARI_LOG_LEVEL")
 
 	// Set up key mappings for inconsistent casing in the config file
 	// This maps the JSON keys to the struct field names
