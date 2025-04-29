@@ -15,60 +15,60 @@ import (
 
 // CalendarConfig holds configuration for a calendar source
 type CalendarConfig struct {
-	Name       string `json:"name"`
-	URL        string `json:"url"`
-	UpdateMode string `json:"update_mode,omitempty"` // "smart" or "full_refresh"
+	Name       string `json:"name" mapstructure:"name"`
+	URL        string `json:"url" mapstructure:"url"`
+	UpdateMode string `json:"update_mode,omitempty" mapstructure:"update_mode"` // "smart" or "full_refresh"
 }
 
 // FamilyMember represents a family member with optional birthday and Telegram ID
 type FamilyMember struct {
-	Name       string `json:"name"`
-	Birthday   string `json:"birthday,omitempty"` // Format: YYYY-MM-DD
-	TelegramID string `json:"telegram_id,omitempty"`
+	Name       string `json:"name" mapstructure:"name"`
+	Birthday   string `json:"birthday,omitempty" mapstructure:"birthday"` // Format: YYYY-MM-DD
+	TelegramID string `json:"telegram_id,omitempty" mapstructure:"telegram_id"`
 }
 
 // TelegramConfig holds configuration for a Telegram bot
 type TelegramConfig struct {
-	BotToken string `json:"bot_token"`
-	ChatID   string `json:"chat_id"`
+	BotToken string `json:"bot_token" mapstructure:"bot_token"`
+	ChatID   string `json:"chat_id" mapstructure:"chat_id"`
 }
 
 // OutputConfig holds configuration for various output methods
 type OutputConfig struct {
-	EnableCLI          bool             `json:"enable_cli"`
-	DiscordWebhookURLs []string         `json:"discord_webhook_urls,omitempty"`
-	TelegramBots       []TelegramConfig `json:"telegram_bots,omitempty"`
+	EnableCLI          bool             `json:"enable_cli" mapstructure:"enable_cli"`
+	DiscordWebhookURLs []string         `json:"discord_webhook_urls,omitempty" mapstructure:"discord_webhook_urls"`
+	TelegramBots       []TelegramConfig `json:"telegram_bots,omitempty" mapstructure:"telegram_bots"`
 }
 
 // Config holds the application configuration
 type Config struct {
 	// Database configuration
-	DBPath string `json:"db_path"`
+	DBPath string `json:"db_path" mapstructure:"db_path"`
 
 	// LLM configuration
-	GeminiAPIKey   string `json:"gemini_api_key"`
-	GeminiModel    string `json:"gemini_model,omitempty"` // Gemini model to use (e.g., "gemini-2.0-flash")
-	OutputLanguage string `json:"outputLanguage"`         // Language for LLM responses (e.g., "Finnish", "English")
-	PromptFilePath string `json:"promptFilePath"`         // Path to the prompts.json file
+	GeminiAPIKey   string `json:"gemini_api_key" mapstructure:"gemini_api_key"`
+	GeminiModel    string `json:"gemini_model,omitempty" mapstructure:"gemini_model"` // Gemini model to use (e.g., "gemini-2.0-flash")
+	OutputLanguage string `json:"outputLanguage" mapstructure:"outputLanguage"`       // Language for LLM responses (e.g., "Finnish", "English")
+	PromptFilePath string `json:"promptFilePath" mapstructure:"promptFilePath"`       // Path to the prompts.json file
 
 	// Brief configuration
-	DaysAhead int `json:"days_ahead,omitempty"` // Number of days ahead to include in the brief
+	DaysAhead int `json:"days_ahead,omitempty" mapstructure:"days_ahead"` // Number of days ahead to include in the brief
 
 	// Location configuration
-	LocationName string  `json:"location_name"`
-	Latitude     float64 `json:"latitude"`
-	Longitude    float64 `json:"longitude"`
-	Timezone     string  `json:"timezone"`
+	LocationName string  `json:"location_name" mapstructure:"location_name"`
+	Latitude     float64 `json:"latitude" mapstructure:"latitude"`
+	Longitude    float64 `json:"longitude" mapstructure:"longitude"`
+	Timezone     string  `json:"timezone" mapstructure:"timezone"`
 
 	// Calendar configuration
-	Calendars []CalendarConfig `json:"calendars"`
+	Calendars []CalendarConfig `json:"calendars" mapstructure:"calendars"`
 
 	// Family configuration
-	Family []FamilyMember `json:"family"`
+	Family []FamilyMember `json:"family" mapstructure:"family"`
 
 	// Output configuration
-	OutputFormat string       `json:"output_format"` // "cli", "telegram", etc. (legacy, use Outputs instead)
-	Outputs      OutputConfig `json:"outputs,omitempty"`
+	OutputFormat string       `json:"output_format" mapstructure:"output_format"` // "cli", "telegram", etc. (legacy, use Outputs instead)
+	Outputs      OutputConfig `json:"outputs,omitempty" mapstructure:"outputs"`
 }
 
 // validateRequiredFields validates that required configuration fields are present
@@ -256,64 +256,13 @@ func GetConfig() (*Config, error) {
 	// Create an empty Config struct
 	cfg := &Config{}
 
-	// Explicitly map Viper keys to struct fields
-	cfg.GeminiAPIKey = viper.GetString("gemini_api_key")
-	cfg.GeminiModel = viper.GetString("gemini_model")
-	cfg.OutputLanguage = viper.GetString("output_language")
-	cfg.PromptFilePath = viper.GetString("prompt_file_path")
-	cfg.DBPath = viper.GetString("db_path")
-	cfg.DaysAhead = viper.GetInt("days_ahead")
-	cfg.LocationName = viper.GetString("location_name")
-	cfg.Latitude = viper.GetFloat64("latitude")
-	cfg.Longitude = viper.GetFloat64("longitude")
-	cfg.Timezone = viper.GetString("timezone")
-	cfg.OutputFormat = viper.GetString("output_format")
+	// Configure Viper to use the JSON tags when unmarshaling
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
 
-	// For complex types, we need to use Unmarshal
-	if err := viper.UnmarshalKey("calendars", &cfg.Calendars); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal calendars: %w", err)
-	}
-
-	if err := viper.UnmarshalKey("family", &cfg.Family); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal family: %w", err)
-	}
-
-	// Unmarshal the outputs configuration
-	if err := viper.UnmarshalKey("outputs", &cfg.Outputs); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal outputs: %w", err)
-	}
-
-	// Explicitly unmarshal the Discord webhook URLs and Telegram bots
-	// This is a workaround for a potential issue with Viper not correctly unmarshaling nested fields
-	if viper.IsSet("outputs.discord_webhook_urls") {
-		webhookURLs := viper.Get("outputs.discord_webhook_urls")
-		if urls, ok := webhookURLs.([]interface{}); ok {
-			cfg.Outputs.DiscordWebhookURLs = make([]string, len(urls))
-			for i, url := range urls {
-				if strURL, ok := url.(string); ok {
-					cfg.Outputs.DiscordWebhookURLs[i] = strURL
-				}
-			}
-			slog.Debug("Explicitly unmarshaled Discord webhook URLs", "count", len(cfg.Outputs.DiscordWebhookURLs))
-		}
-	}
-
-	if viper.IsSet("outputs.telegram_bots") {
-		telegramBots := viper.Get("outputs.telegram_bots")
-		if bots, ok := telegramBots.([]interface{}); ok {
-			cfg.Outputs.TelegramBots = make([]TelegramConfig, len(bots))
-			for i, bot := range bots {
-				if botMap, ok := bot.(map[string]interface{}); ok {
-					if botToken, ok := botMap["bot_token"].(string); ok {
-						cfg.Outputs.TelegramBots[i].BotToken = botToken
-					}
-					if chatID, ok := botMap["chat_id"].(string); ok {
-						cfg.Outputs.TelegramBots[i].ChatID = chatID
-					}
-				}
-			}
-			slog.Debug("Explicitly unmarshaled Telegram bots", "count", len(cfg.Outputs.TelegramBots))
-		}
+	// Unmarshal the entire configuration at once
+	if err := viper.Unmarshal(cfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
 
 	// Debug output

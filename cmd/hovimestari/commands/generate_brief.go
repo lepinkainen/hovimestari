@@ -11,7 +11,6 @@ import (
 	"github.com/shrike/hovimestari/internal/output"
 	"github.com/shrike/hovimestari/internal/store"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // GenerateBriefCmd returns the generate brief command
@@ -99,54 +98,27 @@ func runGenerateBrief(ctx context.Context, daysAhead int) error {
 	// Create a list of outputters based on the configuration
 	var outputters []output.Outputter
 
-	// Log configuration details for debugging
-	configFilePath := "unknown"
-	if v := viper.GetViper(); v != nil {
-		configFilePath = v.ConfigFileUsed()
-	}
-	slog.Debug("Configuration file used", "path", configFilePath)
-
-	// Log the raw configuration values from Viper
-	slog.Debug("Raw Viper configuration",
-		"outputs.enable_cli", viper.GetBool("outputs.enable_cli"),
-		"outputs.discord_webhook_urls", viper.Get("outputs.discord_webhook_urls"),
-		"outputs.telegram_bots", viper.Get("outputs.telegram_bots"))
-
-	// Log the parsed configuration
-	slog.Debug("Parsed output configuration",
-		"enable_cli", cfg.Outputs.EnableCLI,
-		"discord_webhook_count", len(cfg.Outputs.DiscordWebhookURLs),
-		"telegram_bot_count", len(cfg.Outputs.TelegramBots),
-		"output_format", cfg.OutputFormat)
-
-	// Log the Discord webhook URLs
-	for i, url := range cfg.Outputs.DiscordWebhookURLs {
-		slog.Debug("Discord webhook URL", "index", i, "url", url)
-	}
-
-	// Log the Telegram bot configurations
-	for i, bot := range cfg.Outputs.TelegramBots {
-		slog.Debug("Telegram bot", "index", i, "bot_token", bot.BotToken, "chat_id", bot.ChatID)
-	}
+	// Log configuration details
+	slog.Debug("Configuration loaded", "output_format", cfg.OutputFormat)
 
 	// Add CLI outputter if enabled
-	if cfg.Outputs.EnableCLI {
+	if cfg.Outputs.EnableCLI || (cfg.OutputFormat == "cli" && len(cfg.Outputs.DiscordWebhookURLs) == 0 && len(cfg.Outputs.TelegramBots) == 0) {
 		slog.Debug("Adding CLI outputter")
 		outputters = append(outputters, output.NewCLIOutputter())
 	}
 
 	// Add Discord outputters
-	for i, webhookURL := range cfg.Outputs.DiscordWebhookURLs {
+	for _, webhookURL := range cfg.Outputs.DiscordWebhookURLs {
 		if webhookURL != "" {
-			slog.Debug("Adding Discord outputter", "index", i, "webhook_url_length", len(webhookURL))
+			slog.Debug("Adding Discord outputter", "webhook_url_length", len(webhookURL))
 			outputters = append(outputters, output.NewDiscordOutputter(webhookURL))
 		}
 	}
 
 	// Add Telegram outputters
-	for i, telegramCfg := range cfg.Outputs.TelegramBots {
+	for _, telegramCfg := range cfg.Outputs.TelegramBots {
 		if telegramCfg.BotToken != "" && telegramCfg.ChatID != "" {
-			slog.Debug("Adding Telegram outputter", "index", i, "bot_token_length", len(telegramCfg.BotToken), "chat_id", telegramCfg.ChatID)
+			slog.Debug("Adding Telegram outputter", "chat_id", telegramCfg.ChatID)
 			outputters = append(outputters, output.NewTelegramOutputter(telegramCfg.BotToken, telegramCfg.ChatID))
 		}
 	}
