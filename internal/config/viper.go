@@ -278,8 +278,42 @@ func GetConfig() (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal family: %w", err)
 	}
 
+	// Unmarshal the outputs configuration
 	if err := viper.UnmarshalKey("outputs", &cfg.Outputs); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal outputs: %w", err)
+	}
+
+	// Explicitly unmarshal the Discord webhook URLs and Telegram bots
+	// This is a workaround for a potential issue with Viper not correctly unmarshaling nested fields
+	if viper.IsSet("outputs.discord_webhook_urls") {
+		webhookURLs := viper.Get("outputs.discord_webhook_urls")
+		if urls, ok := webhookURLs.([]interface{}); ok {
+			cfg.Outputs.DiscordWebhookURLs = make([]string, len(urls))
+			for i, url := range urls {
+				if strURL, ok := url.(string); ok {
+					cfg.Outputs.DiscordWebhookURLs[i] = strURL
+				}
+			}
+			slog.Debug("Explicitly unmarshaled Discord webhook URLs", "count", len(cfg.Outputs.DiscordWebhookURLs))
+		}
+	}
+
+	if viper.IsSet("outputs.telegram_bots") {
+		telegramBots := viper.Get("outputs.telegram_bots")
+		if bots, ok := telegramBots.([]interface{}); ok {
+			cfg.Outputs.TelegramBots = make([]TelegramConfig, len(bots))
+			for i, bot := range bots {
+				if botMap, ok := bot.(map[string]interface{}); ok {
+					if botToken, ok := botMap["bot_token"].(string); ok {
+						cfg.Outputs.TelegramBots[i].BotToken = botToken
+					}
+					if chatID, ok := botMap["chat_id"].(string); ok {
+						cfg.Outputs.TelegramBots[i].ChatID = chatID
+					}
+				}
+			}
+			slog.Debug("Explicitly unmarshaled Telegram bots", "count", len(cfg.Outputs.TelegramBots))
+		}
 	}
 
 	// Debug output
