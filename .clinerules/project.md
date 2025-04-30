@@ -1,6 +1,14 @@
 # Project: Hovimestari - Personal AI Butler Assistant
 
-For detailed project structure, technology stack, and core concepts, refer to `PROJECT_CONTEXT.md`.
+For detailed project information, refer to the documentation files in the `docs/` directory:
+
+- `docs/01_overview.md`: Project overview and technology stack
+- `docs/02_architecture.md`: Directory structure, key files, and data flow
+- `docs/03_core_concepts.md`: Core concepts (memories, importers, briefs)
+- `docs/04_configuration.md`: Configuration and configuration file examples
+- `docs/05_database.md`: Database schema
+- `docs/06_llm.md`: LLM integration, providers, and prompt structure
+- `docs/07_cli.md`: CLI commands
 
 ## Language
 

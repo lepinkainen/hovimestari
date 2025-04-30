@@ -34,7 +34,15 @@ Hovimestari is a simple yet powerful personal assistant that:
 
 ## Architecture
 
-The application follows a clean, modular architecture with a focus on simplicity and extensibility. For detailed technical information about the project structure, components, and implementation details, please refer to [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
+The application follows a clean, modular architecture with a focus on simplicity and extensibility. For detailed technical information about the project structure, components, and implementation details, please refer to the documentation files in the `docs/` directory:
+
+- [Project Overview](docs/01_overview.md)
+- [Architecture](docs/02_architecture.md)
+- [Core Concepts](docs/03_core_concepts.md)
+- [Configuration](docs/04_configuration.md)
+- [Database Schema](docs/05_database.md)
+- [LLM Integration](docs/06_llm.md)
+- [CLI Commands](docs/07_cli.md)
 
 ## Getting Started
 
