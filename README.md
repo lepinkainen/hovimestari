@@ -228,9 +228,12 @@ Valid log levels are: debug, info, warn, error (default is "debug" for the flag,
 
 ### Configuration Fields
 
-- **db_path**: Path to the SQLite database file
+- **db_path**: Path to the SQLite database file (defaults to `$XDG_CONFIG_HOME/hovimestari/memories.db` if not specified)
 - **log_level**: Logging level (debug, info, warn, error) - defaults to "info"
 - **gemini_api_key**: Your Google Gemini API key
+- **gemini_model**: Gemini model to use (e.g., "gemini-2.0-flash") - defaults to "gemini-2.0-flash"
+- **outputLanguage**: Language for LLM responses (e.g., "Finnish", "English") - defaults to "Finnish"
+- **days_ahead**: Number of days ahead to include in the brief - defaults to 2
 - **location_name**: Name of your location (e.g., "Helsinki")
 - **latitude** and **longitude**: Geographic coordinates for weather forecasts
 - **timezone**: Your timezone in IANA format (e.g., "Europe/Helsinki")
@@ -238,7 +241,11 @@ Valid log levels are: debug, info, warn, error (default is "debug" for the flag,
   - **name**: Name of the calendar
   - **url**: WebCal URL for the calendar
   - **update_mode**: Update strategy for the calendar ("smart" or "full_refresh", defaults to "full_refresh")
-- **family**: List of family members with optional birthdays
+- **family**: List of family members with optional information
+  - **name**: Name of the family member
+  - **birthday**: Optional birthday in YYYY-MM-DD format
+  - **telegram_id**: Optional Telegram ID for the family member
+- **output_format**: Legacy field for output format (cli, telegram, etc.) - use **outputs** instead
 - **outputs**: Configuration for multiple output methods:
   - **enable_cli**: Whether to output to the command line
   - **discord_webhook_urls**: List of Discord webhook URLs to send briefs to

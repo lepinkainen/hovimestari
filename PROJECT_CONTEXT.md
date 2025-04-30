@@ -108,7 +108,7 @@ hovimestari/
 
 - **internal/weather/metno.go**: Fetches weather forecasts from the MET Norway Locationforecast API.
 
-- **docs/llm-ollama.md**: Documentation for Ollama LLM integration, providing an alternative to Google Gemini for running LLMs locally.
+- **docs/llm-ollama.md**: Documentation for planned Ollama LLM integration, providing an alternative to Google Gemini for running LLMs locally (not yet implemented).
 
 - **prompts.json**: Contains the prompt templates used for generating briefs and responses to user queries.
 
@@ -152,7 +152,7 @@ Briefs are generated in Finnish with a formal, butler-like tone.
 The application is configured through a `config.json` file with the following key sections:
 
 - **Database**: Path to the SQLite database file
-- **LLM**: Provider (Gemini or Ollama), API key, model name, and output language
+- **LLM**: Provider (currently only Gemini), API key, model name, and output language
 - **Location**: Name, coordinates, and timezone for weather forecasts
 - **Calendars**: List of calendars to import events from
 - **Family**: List of family members with optional birthdays and Telegram IDs
@@ -166,10 +166,11 @@ The configuration system uses Spf13/Viper for robust configuration management, s
 
 ### LLM Providers
 
-The application supports multiple LLM providers:
+The application currently supports one LLM provider:
 
 - **Google Gemini**: Cloud-based LLM service with API key authentication
-- **Ollama**: Local LLM running on the user's machine, providing privacy and offline capabilities
+
+Support for additional LLM providers (including Ollama, OpenAI, Anthropic Claude, etc.) is planned for future development as outlined in `docs/project-plan.md`.
 
 ## Data Flow
 
@@ -185,7 +186,6 @@ graph TD
         Store[(SQLite DB\nmemories.db)]
         LLMInterface[LLM Interface]
         Gemini[Gemini LLM]
-        Ollama[Ollama LLM]
         Config[config.json]
         Viper[Viper Config]
         Prompts[prompts.json]
@@ -219,13 +219,11 @@ graph TD
     Config --> Viper
     Viper --> LLMInterface
     LLMInterface --> Gemini
-    LLMInterface --> Ollama
 
     BriefCmd -- Reads --> Store
     BriefCmd -- Uses --> LLMInterface
     BriefCmd -- Reads --> Viper
     Gemini -- Reads --> Prompts
-    Ollama -- Reads --> Prompts
 
     BriefCmd -- Sends to --> Output
     Output -- Outputs to --> CLI
@@ -277,7 +275,7 @@ The application provides several CLI commands through the Cobra framework:
 - **add-memory**: Add a memory manually
 - **init-config**: Initialize the configuration file
   - `--output-format`: Output format (cli, telegram)
-- **list-models**: List available LLM models (Gemini or Ollama depending on configuration)
+- **list-models**: List available Gemini LLM models
 - **show-brief-context**: Show the context that would be sent to the LLM
 
 All commands support a global `--config` flag to specify a custom configuration file path.
@@ -339,7 +337,7 @@ All commands support a global `--config` flag to specify a custom configuration 
 }
 ```
 
-### Ollama Configuration
+### Planned Ollama Configuration (Not Yet Implemented)
 
 ```json
 {
@@ -371,6 +369,8 @@ All commands support a global `--config` flag to specify a custom configuration 
   }
 }
 ```
+
+Note: This configuration is for future reference once Ollama support is implemented as outlined in `docs/project-plan.md`.
 
 ## Prompt Structure
 

@@ -24,7 +24,7 @@ This document outlines potential areas for code improvement identified during a 
     - Implement adapters for multiple LLM providers, prioritizing those with official Go libraries:
       - OpenAI (github.com/sashabaranov/go-openai)
       - Anthropic Claude (github.com/anthropics/anthropic-sdk-go)
-      - Ollama (github.com/ollama/ollama/api)
+      - Ollama (github.com/ollama/ollama/api) implementation plan: `docs/llm-ollama.md`
       - Mistral AI (github.com/mistralai/mistralai-go)
       - Cohere (github.com/cohere-ai/cohere-go)
     - Add configuration options to select the LLM provider.
