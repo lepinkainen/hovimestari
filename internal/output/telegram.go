@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 )
 
 // TelegramOutputter sends content to a Telegram chat
@@ -24,17 +25,34 @@ func NewTelegramOutputter(botToken, chatID string) *TelegramOutputter {
 	}
 }
 
-// Send sends the content to a Telegram chat
+// escapeMarkdownV2 escapes special characters for Telegram's MarkdownV2 format
+func escapeMarkdownV2(text string) string {
+	// Characters that need to be escaped in MarkdownV2:
+	// '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'
+	specialChars := []string{"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!"}
+	
+	result := text
+	for _, char := range specialChars {
+		result = strings.ReplaceAll(result, char, "\\"+char)
+	}
+	return result
+}
+
+// Send sends the content to a Telegram chat with markdown formatting
 func (o *TelegramOutputter) Send(ctx context.Context, content string) error {
 	slog.Info("Sending message to Telegram", "chat_id", o.ChatID, "content_length", len(content))
 
 	// Construct the Telegram Bot API URL
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", o.BotToken)
 
+	// Escape the content for MarkdownV2 format
+	escapedContent := escapeMarkdownV2(content)
+
 	// Create the message payload
 	payload := map[string]string{
-		"chat_id": o.ChatID,
-		"text":    content,
+		"chat_id":    o.ChatID,
+		"text":       escapedContent,
+		"parse_mode": "MarkdownV2",
 	}
 
 	// Marshal the payload to JSON
