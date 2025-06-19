@@ -9,6 +9,7 @@ Hovimestari is a Go-based personal AI butler assistant that generates daily brie
 ## Common Commands
 
 Build and development:
+
 - `task build` - Build the application for current OS/ARCH
 - `task build-linux` - Cross-compile for Linux AMD64
 - `task test` - Run all tests
@@ -16,6 +17,7 @@ Build and development:
 - `task deps` - Tidy Go module dependencies
 
 Application commands:
+
 - `task import-calendar` - Import calendar events from WebCal URLs
 - `task import-weather` - Import weather forecasts from MET Norway API
 - `task generate-brief` - Generate and send daily brief
@@ -29,6 +31,7 @@ The application uses Task runner (Taskfile.yml) instead of Make. All CLI command
 **Entry Point**: `cmd/hovimestari/main.go` - Uses Cobra CLI framework with global flags for config path and log level
 
 **Core Components**:
+
 - `internal/store/store.go` - SQLite database operations for single `memories` table
 - `internal/config/viper.go` - Configuration management using Spf13/Viper with XDG directory support
 - `internal/brief/brief.go` - Daily brief generation logic combining memories with LLM
@@ -36,25 +39,31 @@ The application uses Task runner (Taskfile.yml) instead of Make. All CLI command
 - `internal/output/` - Multi-destination output system (CLI, Discord webhooks, Telegram bots)
 
 **Importers**:
+
 - `internal/importer/calendar/` - WebCal/iCalendar event importing with smart vs full_refresh modes
 - `internal/importer/weather/` - MET Norway API weather forecast importing
 
 **Key Design Patterns**:
+
 - Single SQLite table (`memories`) stores all data with source prefixes for organization
 - XDG Base Directory Specification for config file locations
 - Modular output system supporting multiple destinations simultaneously
 - Pure Go SQLite via modernc.org/sqlite (no CGO) for easy cross-compilation
+- Always run "task test" before committing to ensure deterministic behavior
+- Always run "task lint" before committing to ensure code quality
 
 ## Configuration
 
 **Files**: `config.json`, `prompts.json`, `memories.db` (SQLite)
 
 **Config Resolution Order**:
+
 1. `--config` flag path
 2. `$XDG_CONFIG_HOME/hovimestari/` (usually `~/.config/hovimestari/`)
 3. Directory containing executable
 
 **Key Config Fields**:
+
 - `gemini_api_key`, `gemini_model` - LLM configuration
 - `calendars[]` with `update_mode: "smart"|"full_refresh"` - Calendar import strategy
 - `outputs.enable_cli`, `outputs.discord_webhook_urls[]`, `outputs.telegram_bots[]` - Multi-destination output
@@ -63,14 +72,16 @@ The application uses Task runner (Taskfile.yml) instead of Make. All CLI command
 ## Memory System
 
 All data is stored as "memories" in SQLite with:
+
 - `content` - Formatted text (e.g., "Calendar Event: Meeting from 2025-01-01 14:00 to 15:00")
-- `source` - Hierarchical source identifier (e.g., "calendar:work", "weather:helsinki", "manual")  
+- `source` - Hierarchical source identifier (e.g., "calendar:work", "weather:helsinki", "manual")
 - `relevance_date` - When memory is relevant (used for brief filtering)
 - `uid` - Optional unique identifier (prevents calendar event duplicates)
 
 ## Testing
 
 Tests exist for deterministic functions in `*_test.go` files:
+
 - Calendar URL conversion and event formatting
 - Weather forecast formatting
 - Output system behavior
