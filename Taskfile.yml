@@ -23,6 +23,8 @@ tasks:
   build:
     desc: Build the Go application for the current OS/ARCH
     deps:
+      - lint
+      - test
       - clean-build
     cmds:
       - mkdir -p {{.BUILDDIR}}
@@ -43,6 +45,8 @@ tasks:
   build-linux:
     desc: Build the Go application for Linux AMD64
     deps:
+      - lint
+      - test
       - clean-linux
     cmds:
       - mkdir -p {{.BUILDDIR}}
@@ -168,3 +172,9 @@ tasks:
         {{.BINARY}} add-memory --content="$CONTENT"
         {{if .RELEVANCE_DATE}}--relevance-date="$RELEVANCE_DATE"{{end}}
         {{if .SOURCE}}--source="$SOURCE"{{end}}
+
+  release:
+    desc: Deploy binary to remote server (requires RELEASE_SERVER and RELEASE_PATH in .env)
+    deps: [build-linux]
+    cmds:
+      - scp {{.BINARY}}-linux-amd64 "$RELEASE_SERVER:$RELEASE_PATH"
