@@ -78,7 +78,7 @@ func (o *DiscordOutputter) Send(ctx context.Context, content string) error {
 				"status_code", resp.StatusCode,
 				"read_error", readErr)
 		}
-		return fmt.Errorf("Discord webhook request failed with status code %d", resp.StatusCode)
+		return fmt.Errorf("discord webhook request failed with status code %d", resp.StatusCode)
 	}
 
 	slog.Info("Successfully sent message to Discord webhook")

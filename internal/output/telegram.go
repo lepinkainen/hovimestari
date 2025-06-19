@@ -116,7 +116,7 @@ func (o *TelegramOutputter) Send(ctx context.Context, content string) error {
 				"status_code", resp.StatusCode,
 				"read_error", readErr)
 		}
-		return fmt.Errorf("Telegram API request failed with status code %d", resp.StatusCode)
+		return fmt.Errorf("telegram API request failed with status code %d", resp.StatusCode)
 	}
 
 	slog.Info("Successfully sent message to Telegram", "chat_id", o.ChatID)
