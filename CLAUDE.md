@@ -49,8 +49,6 @@ The application uses Task runner (Taskfile.yml) instead of Make. All CLI command
 - XDG Base Directory Specification for config file locations
 - Modular output system supporting multiple destinations simultaneously
 - Pure Go SQLite via modernc.org/sqlite (no CGO) for easy cross-compilation
-- Always run "task test" before committing to ensure deterministic behavior
-- Always run "task lint" before committing to ensure code quality
 
 ## Configuration
 
@@ -96,3 +94,6 @@ Run with `task test` or `go test ./...`. Tests avoid external dependencies (netw
 - Weather data formatted for Finnish users with metric units
 - LLM prompts stored in `prompts.json` for easy modification
 - Cross-platform build support without CGO dependencies
+- Always run "task test" before committing to ensure deterministic behavior
+- Always run "task lint" before committing to ensure code quality
+- Use gofmt for formatting: `gofmt -w .`
