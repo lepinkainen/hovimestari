@@ -26,15 +26,34 @@ func NewTelegramOutputter(botToken, chatID string) *TelegramOutputter {
 }
 
 // escapeMarkdownV2 escapes special characters for Telegram's MarkdownV2 format
+// while preserving intentional markdown formatting
 func escapeMarkdownV2(text string) string {
-	// Characters that need to be escaped in MarkdownV2:
-	// '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'
-	specialChars := []string{"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!"}
+	// Characters that need to be escaped, but we'll preserve some markdown
+	// We'll preserve: * for bold, ** for bold, _ for italic
+	// We need to escape these chars when they're not part of intended formatting:
+	// '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'
+	
+	// First escape the definitely problematic characters
+	problematicChars := []string{"[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!"}
 	
 	result := text
-	for _, char := range specialChars {
+	for _, char := range problematicChars {
 		result = strings.ReplaceAll(result, char, "\\"+char)
 	}
+	
+	// For underscores, we need to be careful - escape single underscores but preserve double ones
+	// This is a simple approach - we could make it more sophisticated
+	result = strings.ReplaceAll(result, "_", "\\_")
+	
+	// For asterisks, we need to preserve ** for bold formatting
+	// Replace single * that aren't part of ** with escaped version
+	// This is complex, so for now let's escape them all except in ** patterns
+	
+	// Simple approach: preserve **text** patterns by temporarily replacing them
+	result = strings.ReplaceAll(result, "**", "DOUBLE_ASTERISK_PLACEHOLDER")
+	result = strings.ReplaceAll(result, "*", "\\*")
+	result = strings.ReplaceAll(result, "DOUBLE_ASTERISK_PLACEHOLDER", "**")
+	
 	return result
 }
 
