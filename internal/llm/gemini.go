@@ -3,6 +3,7 @@ package llm
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/google/generative-ai-go/genai"
@@ -195,7 +196,11 @@ func ListModels(ctx context.Context, apiKey string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
-	defer client.Close()
+	defer func() {
+		if err := client.Close(); err != nil {
+			slog.Error("Failed to close Gemini client", "error", err)
+		}
+	}()
 
 	// List the models
 	iter := client.ListModels(ctx)

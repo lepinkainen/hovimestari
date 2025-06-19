@@ -82,7 +82,11 @@ func (h *HumanReadableHandler) Handle(ctx context.Context, r slog.Record) error 
 	})
 
 	// Write the formatted log line
-	fmt.Fprintf(h.out, "%s  %s  %-40s%s\n", timeStr, levelStr, msg, kvPairs.String())
+	if _, err := fmt.Fprintf(h.out, "%s  %s  %-40s%s\n", timeStr, levelStr, msg, kvPairs.String()); err != nil {
+		// Note: We can't use slog here as it would cause infinite recursion
+		// In practice, fmt.Fprintf to os.Stderr rarely fails
+		return fmt.Errorf("failed to write log output: %w", err)
+	}
 
 	return nil
 }

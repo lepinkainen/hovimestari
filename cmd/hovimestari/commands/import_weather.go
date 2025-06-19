@@ -40,7 +40,11 @@ func runImportWeather(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to create store: %w", err)
 	}
-	defer store.Close()
+	defer func() {
+		if err := store.Close(); err != nil {
+			slog.Error("Failed to close store", "error", err)
+		}
+	}()
 
 	// Initialize the store
 	if err := store.Initialize(); err != nil {

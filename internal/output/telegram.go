@@ -99,7 +99,11 @@ func (o *TelegramOutputter) Send(ctx context.Context, content string) error {
 		slog.Error("Failed to send Telegram API request", "error", err)
 		return fmt.Errorf("failed to send Telegram API request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			slog.Error("Failed to close response body", "error", err)
+		}
+	}()
 
 	// Check the response
 	slog.Info("Received response from Telegram API", "status_code", resp.StatusCode)

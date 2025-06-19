@@ -70,7 +70,11 @@ func (i *Importer) Import(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to fetch calendar data: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			slog.Error("Failed to close response body", "error", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to fetch calendar data: status code %d", resp.StatusCode)

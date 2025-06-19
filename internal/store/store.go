@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -134,7 +135,11 @@ func (s *Store) GetRelevantMemories(startDate, endDate time.Time) ([]Memory, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to query memories: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			slog.Error("Failed to close database rows", "error", err)
+		}
+	}()
 
 	var memories []Memory
 	for rows.Next() {
@@ -195,7 +200,11 @@ func (s *Store) GetMemoriesBySource(source string) ([]Memory, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to query memories by source: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			slog.Error("Failed to close database rows", "error", err)
+		}
+	}()
 
 	var memories []Memory
 	for rows.Next() {
@@ -311,7 +320,11 @@ func (s *Store) GetRelevantCalendarEvents(startDate, endDate time.Time) ([]Calen
 	if err != nil {
 		return nil, fmt.Errorf("failed to query calendar events: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			slog.Error("Failed to close database rows", "error", err)
+		}
+	}()
 
 	var events []CalendarEvent
 	for rows.Next() {
@@ -370,7 +383,11 @@ func (s *Store) GetOngoingCalendarEvents(currentTime time.Time) ([]CalendarEvent
 	if err != nil {
 		return nil, fmt.Errorf("failed to query ongoing calendar events: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			slog.Error("Failed to close database rows", "error", err)
+		}
+	}()
 
 	var events []CalendarEvent
 	for rows.Next() {

@@ -33,7 +33,9 @@ func InitConfigCmd() *cobra.Command {
 	cmd.Flags().StringVar(&outputFormat, "output-format", "cli", "Output format (cli, telegram)")
 	cmd.Flags().StringVar(&configPath, "config", "", "Path to the configuration file (default: $XDG_CONFIG_HOME/hovimestari/config.json)")
 
-	cmd.MarkFlagRequired("gemini-api-key")
+	if err := cmd.MarkFlagRequired("gemini-api-key"); err != nil {
+		return nil
+	}
 
 	return cmd
 }
@@ -110,7 +112,11 @@ func runInitConfig(configPath, geminiAPIKey, outputFormat string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create config file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			slog.Error("Failed to close config file", "error", err)
+		}
+	}()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
@@ -157,7 +163,11 @@ func runInitConfig(configPath, geminiAPIKey, outputFormat string) error {
 			if err != nil {
 				return fmt.Errorf("failed to create prompts.json: %w", err)
 			}
-			defer promptsFile.Close()
+			defer func() {
+				if err := promptsFile.Close(); err != nil {
+					slog.Error("Failed to close prompts file", "error", err)
+				}
+			}()
 
 			encoder := json.NewEncoder(promptsFile)
 			encoder.SetIndent("", "  ")

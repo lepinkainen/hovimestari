@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -82,7 +83,11 @@ func GetForecast(latitude, longitude float64) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch weather data: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			slog.Error("Failed to close response body", "error", err)
+		}
+	}()
 
 	// Check the response status code
 	if resp.StatusCode != http.StatusOK {
@@ -174,7 +179,11 @@ func GetMultiDayForecast(latitude, longitude float64) ([]DailyForecast, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch weather data: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			slog.Error("Failed to close response body", "error", err)
+		}
+	}()
 
 	// Check the response status code
 	if resp.StatusCode != http.StatusOK {
@@ -309,7 +318,11 @@ func GetCurrentDayHourlyForecast(latitude, longitude float64) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch weather data: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			slog.Error("Failed to close response body", "error", err)
+		}
+	}()
 
 	// Check the response status code
 	if resp.StatusCode != http.StatusOK {

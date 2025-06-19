@@ -169,11 +169,21 @@ func InitViper(configFileFlag string) error {
 	viper.AutomaticEnv()
 
 	// Bind environment variables to specific keys
-	viper.BindEnv("gemini_api_key", "HOVIMESTARI_GEMINI_API_KEY")
-	viper.BindEnv("gemini_model", "HOVIMESTARI_GEMINI_MODEL")
-	viper.BindEnv("output_format", "HOVIMESTARI_OUTPUT_FORMAT")
-	viper.BindEnv("db_path", "HOVIMESTARI_DB_PATH")
-	viper.BindEnv("log_level", "HOVIMESTARI_LOG_LEVEL")
+	if err := viper.BindEnv("gemini_api_key", "HOVIMESTARI_GEMINI_API_KEY"); err != nil {
+		slog.Warn("Failed to bind gemini_api_key environment variable", "error", err)
+	}
+	if err := viper.BindEnv("gemini_model", "HOVIMESTARI_GEMINI_MODEL"); err != nil {
+		slog.Warn("Failed to bind gemini_model environment variable", "error", err)
+	}
+	if err := viper.BindEnv("output_format", "HOVIMESTARI_OUTPUT_FORMAT"); err != nil {
+		slog.Warn("Failed to bind output_format environment variable", "error", err)
+	}
+	if err := viper.BindEnv("db_path", "HOVIMESTARI_DB_PATH"); err != nil {
+		slog.Warn("Failed to bind db_path environment variable", "error", err)
+	}
+	if err := viper.BindEnv("log_level", "HOVIMESTARI_LOG_LEVEL"); err != nil {
+		slog.Warn("Failed to bind log_level environment variable", "error", err)
+	}
 
 	// Set up key mappings for inconsistent casing in the config file
 	// This maps the JSON keys to the struct field names
@@ -243,7 +253,11 @@ func LoadPrompts(filePath string) (map[string][]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open prompts file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			slog.Error("Failed to close prompts file", "error", err)
+		}
+	}()
 
 	// Decode the JSON
 	var prompts map[string][]string

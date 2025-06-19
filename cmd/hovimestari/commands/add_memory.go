@@ -32,7 +32,9 @@ func AddMemoryCmd() *cobra.Command {
 	cmd.Flags().StringVar(&relevanceDate, "relevance-date", "", "Relevance date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&source, "source", "manual", "Memory source")
 
-	cmd.MarkFlagRequired("content")
+	if err := cmd.MarkFlagRequired("content"); err != nil {
+		return nil
+	}
 
 	return cmd
 }
@@ -53,7 +55,11 @@ func runAddMemory(ctx context.Context, content, relevanceDateStr, source string)
 	if err != nil {
 		return fmt.Errorf("failed to create store: %w", err)
 	}
-	defer store.Close()
+	defer func() {
+		if err := store.Close(); err != nil {
+			slog.Error("Failed to close store", "error", err)
+		}
+	}()
 
 	// Initialize the store
 	if err := store.Initialize(); err != nil {
