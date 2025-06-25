@@ -1,4 +1,4 @@
-module github.com/shrike/hovimestari
+module github.com/lepinkainen/hovimestari
 
 go 1.24
 
