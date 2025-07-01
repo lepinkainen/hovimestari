@@ -14,7 +14,7 @@ const (
 	// MetNoAPIURL is the base URL for the MET Norway Locationforecast API
 	MetNoAPIURL = "https://api.met.no/weatherapi/locationforecast/2.0/compact"
 	// UserAgent is required by the MET Norway API
-	UserAgent = "Hovimestari/1.0 github.com/shrike/hovimestari"
+	UserAgent = "Hovimestari/1.0 github.com/lepinkainen/hovimestari"
 )
 
 // MetNoForecast represents the response from the MET Norway API

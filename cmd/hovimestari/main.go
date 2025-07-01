@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/shrike/hovimestari/cmd/hovimestari/commands"
-	"github.com/shrike/hovimestari/internal/config"
-	"github.com/shrike/hovimestari/internal/logging"
+	"github.com/lepinkainen/hovimestari/cmd/hovimestari/commands"
+	"github.com/lepinkainen/hovimestari/internal/config"
+	"github.com/lepinkainen/hovimestari/internal/logging"
 	"github.com/spf13/cobra"
 
 	// Import SQLite driver
@@ -93,6 +93,7 @@ func main() {
 	rootCmd.AddCommand(commands.AddMemoryCmd())
 	rootCmd.AddCommand(commands.InitConfigCmd())
 	rootCmd.AddCommand(commands.ListModelsCmd())
+	rootCmd.AddCommand(commands.ImportWaterQualityCmd())
 
 	// Execute the command
 	if err := rootCmd.Execute(); err != nil {

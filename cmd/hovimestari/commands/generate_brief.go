@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/shrike/hovimestari/internal/brief"
-	"github.com/shrike/hovimestari/internal/config"
-	"github.com/shrike/hovimestari/internal/llm"
-	"github.com/shrike/hovimestari/internal/output"
-	"github.com/shrike/hovimestari/internal/store"
+	"github.com/lepinkainen/hovimestari/internal/brief"
+	"github.com/lepinkainen/hovimestari/internal/config"
+	"github.com/lepinkainen/hovimestari/internal/llm"
+	"github.com/lepinkainen/hovimestari/internal/output"
+	"github.com/lepinkainen/hovimestari/internal/store"
 	"github.com/spf13/cobra"
 )
 

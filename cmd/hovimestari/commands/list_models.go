@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/shrike/hovimestari/internal/config"
-	"github.com/shrike/hovimestari/internal/llm"
+	"github.com/lepinkainen/hovimestari/internal/config"
+	"github.com/lepinkainen/hovimestari/internal/llm"
 	"github.com/spf13/cobra"
 )
 

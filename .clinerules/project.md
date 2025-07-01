@@ -54,7 +54,7 @@ package commands
 import (
 	"fmt"
 
-	"github.com/shrike/hovimestari/internal/config"
+	"github.com/lepinkainen/hovimestari/internal/config"
 	"github.com/spf13/cobra"
 )
 

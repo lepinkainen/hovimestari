@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shrike/hovimestari/internal/xdg"
+	"github.com/lepinkainen/hovimestari/internal/xdg"
 	"github.com/spf13/viper"
 )
 

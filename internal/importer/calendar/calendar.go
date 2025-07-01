@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/apognu/gocal"
-	"github.com/shrike/hovimestari/internal/store"
+	"github.com/lepinkainen/hovimestari/internal/store"
 )
 
 const (

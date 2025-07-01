@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shrike/hovimestari/internal/store"
-	"github.com/shrike/hovimestari/internal/weather"
+	"github.com/lepinkainen/hovimestari/internal/store"
+	"github.com/lepinkainen/hovimestari/internal/weather"
 )
 
 const (

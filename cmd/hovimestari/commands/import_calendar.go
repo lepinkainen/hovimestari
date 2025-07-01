@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/shrike/hovimestari/internal/config"
-	"github.com/shrike/hovimestari/internal/importer/calendar"
-	"github.com/shrike/hovimestari/internal/store"
+	"github.com/lepinkainen/hovimestari/internal/config"
+	"github.com/lepinkainen/hovimestari/internal/importer/calendar"
+	"github.com/lepinkainen/hovimestari/internal/store"
 	"github.com/spf13/cobra"
 )
 

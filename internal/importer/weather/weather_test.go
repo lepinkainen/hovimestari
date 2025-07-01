@@ -3,7 +3,7 @@ package weather
 import (
 	"testing"
 
-	"github.com/shrike/hovimestari/internal/store"
+	"github.com/lepinkainen/hovimestari/internal/store"
 )
 
 // TestNewImporter tests the NewImporter function
