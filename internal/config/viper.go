@@ -40,6 +40,11 @@ type OutputConfig struct {
 	TelegramBots       []TelegramConfig `json:"telegram_bots,omitempty" mapstructure:"telegram_bots"`
 }
 
+// WaterQualityLocation holds configuration for a water quality measurement location
+type WaterQualityLocation struct {
+	Name string `json:"name" mapstructure:"name"`
+}
+
 // Config holds the application configuration
 type Config struct {
 	// Database configuration
@@ -72,6 +77,9 @@ type Config struct {
 	// Output configuration
 	OutputFormat string       `json:"output_format" mapstructure:"output_format"` // "cli", "telegram", etc. (legacy, use Outputs instead)
 	Outputs      OutputConfig `json:"outputs,omitempty" mapstructure:"outputs"`
+
+	// Water Quality configuration
+	WaterQualityLocations []WaterQualityLocation `json:"water_quality_locations,omitempty" mapstructure:"water_quality_locations"`
 }
 
 // validateRequiredFields validates that required configuration fields are present
@@ -145,6 +153,17 @@ func validateFamily(config *Config) error {
 			if err != nil {
 				return fmt.Errorf("invalid birthday format for %s: %w", member.Name, err)
 			}
+		}
+	}
+
+	return nil
+}
+
+// validateWaterQualityLocations validates the water quality location configurations
+func validateWaterQualityLocations(config *Config) error {
+	for i, location := range config.WaterQualityLocations {
+		if location.Name == "" {
+			return fmt.Errorf("water quality location %d is missing a name", i+1)
 		}
 	}
 
@@ -346,6 +365,10 @@ func GetConfig() (*Config, error) {
 	}
 
 	if err := validateFamily(cfg); err != nil {
+		return nil, err
+	}
+
+	if err := validateWaterQualityLocations(cfg); err != nil {
 		return nil, err
 	}
 
