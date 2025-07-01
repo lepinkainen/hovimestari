@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/shrike/hovimestari/internal/config"
-	"github.com/shrike/hovimestari/internal/store"
+	"github.com/lepinkainen/hovimestari/internal/config"
+	"github.com/lepinkainen/hovimestari/internal/store"
 	"github.com/spf13/cobra"
 )
 

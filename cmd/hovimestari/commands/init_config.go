@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/shrike/hovimestari/internal/config"
-	"github.com/shrike/hovimestari/internal/xdg"
+	"github.com/lepinkainen/hovimestari/internal/config"
+	"github.com/lepinkainen/hovimestari/internal/xdg"
 	"github.com/spf13/cobra"
 )
 

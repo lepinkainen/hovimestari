@@ -20,6 +20,7 @@ Application commands:
 
 - `task import-calendar` - Import calendar events from WebCal URLs
 - `task import-weather` - Import weather forecasts from MET Norway API
+- `task import-water-quality` - Import water quality data for specific locations
 - `task generate-brief` - Generate and send daily brief
 - `task add-memory CONTENT="text" RELEVANCE_DATE="2025-01-01" SOURCE="manual"` - Add memory manually
 - `task init-config` - Initialize configuration (reads GEMINI_API_KEY, WEBCAL_URL from env)
@@ -36,12 +37,14 @@ The application uses Task runner (Taskfile.yml) instead of Make. All CLI command
 - `internal/config/viper.go` - Configuration management using Spf13/Viper with XDG directory support
 - `internal/brief/brief.go` - Daily brief generation logic combining memories with LLM
 - `internal/llm/gemini.go` - Google Gemini API client
+- `internal/logging/handler.go` - Custom structured logging handler for human-readable output
 - `internal/output/` - Multi-destination output system (CLI, Discord webhooks, Telegram bots)
 
 **Importers**:
 
 - `internal/importer/calendar/` - WebCal/iCalendar event importing with smart vs full_refresh modes
 - `internal/importer/weather/` - MET Norway API weather forecast importing
+- `cmd/hovimestari/commands/import_water_quality.go` - Manual water quality data importing
 
 **Key Design Patterns**:
 

@@ -12,6 +12,7 @@ hovimestari/
 │           ├── add_memory.go
 │           ├── generate_brief.go
 │           ├── import_calendar.go
+│           ├── import_water_quality.go
 │           ├── import_weather.go
 │           ├── init_config.go
 │           ├── list_models.go
@@ -31,6 +32,8 @@ hovimestari/
 │   │       └── weather_test.go
 │   ├── llm/
 │   │   └── gemini.go     # Google Gemini API client
+│   ├── logging/
+│   │   └── handler.go    # Custom logging handler
 │   ├── output/
 │   │   ├── cli.go        # CLI output implementation
 │   │   ├── discord.go    # Discord output implementation
@@ -64,6 +67,7 @@ hovimestari/
   - **add_memory.go**: Command for adding memories manually
   - **generate_brief.go**: Command for generating daily briefs
   - **import_calendar.go**: Command for importing calendar events
+  - **import_water_quality.go**: Command for importing water quality data
   - **import_weather.go**: Command for importing weather forecasts
   - **init_config.go**: Command for initializing configuration
   - **list_models.go**: Command for listing available LLM models
@@ -80,6 +84,8 @@ hovimestari/
 - **internal/importer/weather/weather.go**: Imports weather forecasts from the MET Norway API and stores them as memories.
 
 - **internal/llm/gemini.go**: Provides the client for interacting with the Google Gemini API, including methods for generating briefs and responses to user queries.
+
+- **internal/logging/handler.go**: Custom structured logging handler that provides human-readable output format for the application logs.
 
 - **internal/xdg/xdg.go**: Implements support for the XDG Base Directory Specification, providing standardized locations for configuration files and ensuring cross-platform compatibility.
 
