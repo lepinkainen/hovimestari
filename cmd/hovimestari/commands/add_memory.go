@@ -8,35 +8,18 @@ import (
 
 	"github.com/lepinkainen/hovimestari/internal/config"
 	"github.com/lepinkainen/hovimestari/internal/store"
-	"github.com/spf13/cobra"
 )
 
-// AddMemoryCmd returns the add memory command
-func AddMemoryCmd() *cobra.Command {
-	var (
-		content       string
-		relevanceDate string
-		source        string
-	)
+// AddMemoryCmd defines the add memory command for Kong
+type AddMemoryCmd struct {
+	Content       string `kong:"help='Memory content',required"`
+	RelevanceDate string `kong:"help='Relevance date (YYYY-MM-DD)'"`
+	Source        string `kong:"help='Memory source',default='manual'"`
+}
 
-	cmd := &cobra.Command{
-		Use:   "add-memory",
-		Short: "Add a memory",
-		Long:  `Add a memory to the database.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAddMemory(cmd.Context(), content, relevanceDate, source)
-		},
-	}
-
-	cmd.Flags().StringVar(&content, "content", "", "Memory content")
-	cmd.Flags().StringVar(&relevanceDate, "relevance-date", "", "Relevance date (YYYY-MM-DD)")
-	cmd.Flags().StringVar(&source, "source", "manual", "Memory source")
-
-	if err := cmd.MarkFlagRequired("content"); err != nil {
-		return nil
-	}
-
-	return cmd
+// Run executes the add memory command
+func (cmd *AddMemoryCmd) Run() error {
+	return runAddMemory(context.Background(), cmd.Content, cmd.RelevanceDate, cmd.Source)
 }
 
 // runAddMemory runs the add memory command, adding a new memory to the database with

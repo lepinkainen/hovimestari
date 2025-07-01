@@ -8,21 +8,14 @@ import (
 	"github.com/lepinkainen/hovimestari/internal/config"
 	"github.com/lepinkainen/hovimestari/internal/importer/calendar"
 	"github.com/lepinkainen/hovimestari/internal/store"
-	"github.com/spf13/cobra"
 )
 
-// ImportCalendarCmd returns the import calendar command
-func ImportCalendarCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "import-calendar",
-		Short: "Import calendar events",
-		Long:  `Import all calendar events from the configured WebCal URLs.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runImportCalendar(cmd.Context())
-		},
-	}
+// ImportCalendarCmd defines the import calendar command for Kong
+type ImportCalendarCmd struct{}
 
-	return cmd
+// Run executes the import calendar command
+func (cmd *ImportCalendarCmd) Run() error {
+	return runImportCalendar(context.Background())
 }
 
 // runImportCalendar runs the import calendar command, fetching events from all configured
