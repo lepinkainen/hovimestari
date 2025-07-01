@@ -149,6 +149,12 @@ tasks:
     cmds:
       - "{{.BINARY}} import-weather"
 
+  import-water-quality:
+    desc: Import water quality data (requires --location and --quality flags)
+    deps: [build]
+    cmds:
+      - "{{.BINARY}} import-water-quality --location=\"$LOCATION\" --quality=\"$QUALITY\""
+
   generate-brief:
     desc: Generate a daily brief
     deps: [build]
