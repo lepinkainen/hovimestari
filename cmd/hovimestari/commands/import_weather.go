@@ -8,21 +8,14 @@ import (
 	"github.com/lepinkainen/hovimestari/internal/config"
 	weatherimporter "github.com/lepinkainen/hovimestari/internal/importer/weather"
 	"github.com/lepinkainen/hovimestari/internal/store"
-	"github.com/spf13/cobra"
 )
 
-// ImportWeatherCmd returns the import weather command
-func ImportWeatherCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "import-weather",
-		Short: "Import weather forecasts",
-		Long:  `Import all available weather forecasts for the configured location and store them as memories.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runImportWeather(cmd.Context())
-		},
-	}
+// ImportWeatherCmd defines the import weather command for Kong
+type ImportWeatherCmd struct{}
 
-	return cmd
+// Run executes the import weather command
+func (cmd *ImportWeatherCmd) Run() error {
+	return runImportWeather(context.Background())
 }
 
 // runImportWeather runs the import weather command, fetching weather forecasts for the

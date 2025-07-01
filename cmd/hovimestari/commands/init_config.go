@@ -9,35 +9,18 @@ import (
 
 	"github.com/lepinkainen/hovimestari/internal/config"
 	"github.com/lepinkainen/hovimestari/internal/xdg"
-	"github.com/spf13/cobra"
 )
 
-// InitConfigCmd returns the init config command
-func InitConfigCmd() *cobra.Command {
-	var (
-		geminiAPIKey string
-		outputFormat string
-		configPath   string
-	)
+// InitConfigCmd defines the init config command for Kong
+type InitConfigCmd struct {
+	GeminiAPIKey string `kong:"help='Google Gemini API key',required"`
+	OutputFormat string `kong:"help='Output format (cli, telegram)',default='cli'"`
+	ConfigPath   string `kong:"help='Path to configuration file (default: $XDG_CONFIG_HOME/hovimestari/config.json)',name='config-path'"`
+}
 
-	cmd := &cobra.Command{
-		Use:   "init-config",
-		Short: "Initialize the configuration",
-		Long:  `Initialize the configuration file with the provided values. Note that this only sets up the basic configuration. You will need to edit the config.json file manually to add calendars, family members, and location information.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runInitConfig(configPath, geminiAPIKey, outputFormat)
-		},
-	}
-
-	cmd.Flags().StringVar(&geminiAPIKey, "gemini-api-key", "", "Google Gemini API key")
-	cmd.Flags().StringVar(&outputFormat, "output-format", "cli", "Output format (cli, telegram)")
-	cmd.Flags().StringVar(&configPath, "config", "", "Path to the configuration file (default: $XDG_CONFIG_HOME/hovimestari/config.json)")
-
-	if err := cmd.MarkFlagRequired("gemini-api-key"); err != nil {
-		return nil
-	}
-
-	return cmd
+// Run executes the init config command
+func (cmd *InitConfigCmd) Run() error {
+	return runInitConfig(cmd.ConfigPath, cmd.GeminiAPIKey, cmd.OutputFormat)
 }
 
 // runInitConfig runs the init config command, creating a new configuration file with

@@ -9,26 +9,16 @@ import (
 	"github.com/lepinkainen/hovimestari/internal/config"
 	"github.com/lepinkainen/hovimestari/internal/llm"
 	"github.com/lepinkainen/hovimestari/internal/store"
-	"github.com/spf13/cobra"
 )
 
-// ShowBriefContextCmd returns the show brief context command
-func ShowBriefContextCmd() *cobra.Command {
-	var daysAhead int
+// ShowBriefContextCmd defines the show brief context command for Kong
+type ShowBriefContextCmd struct {
+	DaysAhead int `kong:"help='Number of days ahead to include in the brief context',default=2"`
+}
 
-	cmd := &cobra.Command{
-		Use:   "show-brief-context",
-		Short: "Show the context given to the LLM for brief generation",
-		Long:  `Show the full context that would be given to the LLM when generating a brief, without actually generating the brief.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runShowBriefContext(cmd.Context(), daysAhead)
-		},
-	}
-
-	// Add days-ahead flag specifically for brief context
-	cmd.Flags().IntVar(&daysAhead, "days-ahead", 2, "Number of days ahead to include in the brief context")
-
-	return cmd
+// Run executes the show brief context command
+func (cmd *ShowBriefContextCmd) Run() error {
+	return runShowBriefContext(context.Background(), cmd.DaysAhead)
 }
 
 // runShowBriefContext runs the show brief context command, building the same context

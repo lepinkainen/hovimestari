@@ -10,44 +10,34 @@ import (
 	"github.com/lepinkainen/hovimestari/internal/llm"
 	"github.com/lepinkainen/hovimestari/internal/output"
 	"github.com/lepinkainen/hovimestari/internal/store"
-	"github.com/spf13/cobra"
 )
 
-// GenerateBriefCmd returns the generate brief command
-func GenerateBriefCmd() *cobra.Command {
-	var daysAheadFlag int
+// GenerateBriefCmd defines the generate brief command for Kong
+type GenerateBriefCmd struct {
+	DaysAhead int `kong:"help='Number of days ahead to include in the brief (overrides config value)',default=0"`
+}
 
-	cmd := &cobra.Command{
-		Use:   "generate-brief",
-		Short: "Generate a daily brief",
-		Long:  `Generate a daily brief based on the stored memories.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get the configuration
-			cfg, err := config.GetConfig()
-			if err != nil {
-				return fmt.Errorf("failed to get configuration: %w", err)
-			}
-
-			// Use the flag value if provided, otherwise use the config value
-			daysAhead := cfg.DaysAhead
-
-			if cmd.Flags().Changed("days-ahead") {
-				daysAhead = daysAheadFlag
-			}
-
-			// If neither flag nor config has a value, use the default
-			if daysAhead == 0 {
-				daysAhead = 2
-			}
-
-			return runGenerateBrief(cmd.Context(), daysAhead)
-		},
+// Run executes the generate brief command
+func (cmd *GenerateBriefCmd) Run() error {
+	// Get the configuration
+	cfg, err := config.GetConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get configuration: %w", err)
 	}
 
-	// Add days-ahead flag as an override for the config value
-	cmd.Flags().IntVar(&daysAheadFlag, "days-ahead", 0, "Number of days ahead to include in the brief (overrides config value)")
+	// Use the flag value if provided, otherwise use the config value
+	daysAhead := cfg.DaysAhead
 
-	return cmd
+	if cmd.DaysAhead > 0 {
+		daysAhead = cmd.DaysAhead
+	}
+
+	// If neither flag nor config has a value, use the default
+	if daysAhead == 0 {
+		daysAhead = 2
+	}
+
+	return runGenerateBrief(context.Background(), daysAhead)
 }
 
 // runGenerateBrief runs the generate brief command, generating a daily brief based on

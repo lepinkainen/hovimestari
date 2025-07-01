@@ -7,21 +7,14 @@ import (
 
 	"github.com/lepinkainen/hovimestari/internal/config"
 	"github.com/lepinkainen/hovimestari/internal/llm"
-	"github.com/spf13/cobra"
 )
 
-// ListModelsCmd returns the list models command
-func ListModelsCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "list-models",
-		Short: "List available Gemini models",
-		Long:  `List all available Gemini models that can be used with the API.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runListModels(cmd.Context())
-		},
-	}
+// ListModelsCmd defines the list models command for Kong
+type ListModelsCmd struct{}
 
-	return cmd
+// Run executes the list models command
+func (cmd *ListModelsCmd) Run() error {
+	return runListModels(context.Background())
 }
 
 // runListModels runs the list models command, querying the Gemini API for available

@@ -3,9 +3,9 @@ module github.com/lepinkainen/hovimestari
 go 1.24
 
 require (
+	github.com/alecthomas/kong v1.12.0
 	github.com/apognu/gocal v0.9.1
 	github.com/google/generative-ai-go v0.19.0
-	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	google.golang.org/api v0.229.0
 	modernc.org/sqlite v1.37.0
@@ -29,7 +29,6 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
-	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect

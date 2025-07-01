@@ -8,36 +8,17 @@ import (
 
 	"github.com/lepinkainen/hovimestari/internal/config"
 	"github.com/lepinkainen/hovimestari/internal/store"
-	"github.com/spf13/cobra"
 )
 
-// ImportWaterQualityCmd returns the import water quality command
-func ImportWaterQualityCmd() *cobra.Command {
-	var (
-		location string
-		quality  string
-	)
+// ImportWaterQualityCmd defines the import water quality command for Kong
+type ImportWaterQualityCmd struct {
+	Location string `kong:"help='The name of the measurement location',required"`
+	Quality  string `kong:"help='The water quality status',required"`
+}
 
-	cmd := &cobra.Command{
-		Use:   "import-water-quality",
-		Short: "Import water quality data for a specific location",
-		Long:  `Imports water quality data for a specific location and stores it as a memory.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runImportWaterQuality(cmd.Context(), location, quality)
-		},
-	}
-
-	cmd.Flags().StringVar(&location, "location", "", "The name of the measurement location (required)")
-	cmd.Flags().StringVar(&quality, "quality", "", "The water quality status (required)")
-
-	if err := cmd.MarkFlagRequired("location"); err != nil {
-		return nil
-	}
-	if err := cmd.MarkFlagRequired("quality"); err != nil {
-		return nil
-	}
-
-	return cmd
+// Run executes the import water quality command
+func (cmd *ImportWaterQualityCmd) Run() error {
+	return runImportWaterQuality(context.Background(), cmd.Location, cmd.Quality)
 }
 
 func runImportWaterQuality(ctx context.Context, location, quality string) error {
