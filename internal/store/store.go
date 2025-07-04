@@ -432,3 +432,73 @@ func (s *Store) GetOngoingCalendarEvents(currentTime time.Time) ([]CalendarEvent
 
 	return events, nil
 }
+
+// UpdateMemory updates an existing memory in the database
+func (s *Store) UpdateMemory(memory *Memory) error {
+	query := `
+	UPDATE memories
+	SET content = ?, relevance_date = ?, source = ?, uid = ?
+	WHERE id = ?
+	`
+
+	_, err := s.db.Exec(query, memory.Content, memory.RelevanceDate, memory.Source, memory.UID, memory.ID)
+	if err != nil {
+		return fmt.Errorf("failed to update memory: %w", err)
+	}
+
+	return nil
+}
+
+// DeleteMemory deletes a memory from the database
+func (s *Store) DeleteMemory(id int64) error {
+	query := `DELETE FROM memories WHERE id = ?`
+
+	result, err := s.db.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete memory: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("memory with ID %d not found", id)
+	}
+
+	return nil
+}
+
+// GetMemoryByID retrieves a single memory by its ID
+func (s *Store) GetMemoryByID(id int64) (*Memory, error) {
+	query := `
+	SELECT id, content, created_at, relevance_date, source, uid
+	FROM memories
+	WHERE id = ?
+	`
+
+	row := s.db.QueryRow(query, id)
+
+	var memory Memory
+	var relevanceDate sql.NullTime
+	var uid sql.NullString
+
+	err := row.Scan(&memory.ID, &memory.Content, &memory.CreatedAt, &relevanceDate, &memory.Source, &uid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("memory with ID %d not found", id)
+		}
+		return nil, fmt.Errorf("failed to scan memory row: %w", err)
+	}
+
+	if relevanceDate.Valid {
+		memory.RelevanceDate = &relevanceDate.Time
+	}
+
+	if uid.Valid {
+		memory.UID = &uid.String
+	}
+
+	return &memory, nil
+}
