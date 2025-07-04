@@ -15,4 +15,5 @@ type CLI struct {
 	AddMemory          commands.AddMemoryCmd          `kong:"cmd,help='Add memory manually to database'"`
 	InitConfig         commands.InitConfigCmd         `kong:"cmd,help='Initialize configuration file'"`
 	ListModels         commands.ListModelsCmd         `kong:"cmd,help='List available Gemini models'"`
+	TUI                commands.TUICmd                `kong:"cmd,help='Start interactive terminal UI'"`
 }
