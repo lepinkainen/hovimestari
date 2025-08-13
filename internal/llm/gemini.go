@@ -21,6 +21,22 @@ const (
 	PromptQueryPlaceholder = "%QUERY%"
 )
 
+// cleanMarkdownWrapper removes markdown code block wrapping from LLM responses
+func cleanMarkdownWrapper(content string) string {
+	// Remove leading and trailing whitespace
+	content = strings.TrimSpace(content)
+
+	// Check if content starts with ```markdown and ends with ```
+	if strings.HasPrefix(content, "```markdown") && strings.HasSuffix(content, "```") {
+		// Remove the markdown code block wrapper
+		content = strings.TrimPrefix(content, "```markdown")
+		content = strings.TrimSuffix(content, "```")
+		content = strings.TrimSpace(content)
+	}
+
+	return content
+}
+
 // Client is a client for the Google Gemini API
 type Client struct {
 	client  *genai.Client
@@ -72,7 +88,10 @@ func (c *Client) Generate(ctx context.Context, promptKey string, outputLanguage 
 		return "", fmt.Errorf("unexpected response format")
 	}
 
-	return string(text), nil
+	// Clean any markdown wrapper from the response
+	cleanedText := cleanMarkdownWrapper(string(text))
+
+	return cleanedText, nil
 }
 
 // BuildBriefPrompt builds the prompt content for a brief without sending it to the LLM
