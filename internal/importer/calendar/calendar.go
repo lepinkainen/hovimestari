@@ -93,7 +93,7 @@ func (i *Importer) Import(ctx context.Context) error {
 	parser.Strict.Mode = gocal.StrictModeFailEvent
 	err = parser.Parse()
 	if err != nil {
-		slog.Warn("Warning: Some events may have been skipped due to parsing errors: %v", "error", err)
+		slog.Warn("Some events may have been skipped due to parsing errors", "error", err)
 	}
 
 	// Log the number of events successfully parsed
@@ -150,7 +150,7 @@ func (i *Importer) Import(ctx context.Context) error {
 				if err != nil {
 					return fmt.Errorf("failed to update calendar event in database: %w", err)
 				}
-				slog.Info("Updated calendar event: %s at %s", event.Summary, event.Start.Format("2006-01-02 15:04"))
+				slog.Info("Updated calendar event", "summary", event.Summary, "start", event.Start.Format("2006-01-02 15:04"))
 				continue
 			}
 		}
