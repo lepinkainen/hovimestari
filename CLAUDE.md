@@ -4,54 +4,56 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Hovimestari is a Go-based personal AI butler assistant that generates daily briefs. It stores "memories" in SQLite, imports calendar events and weather data, and uses Google Gemini API to generate personalized daily briefs in Finnish.
+Hovimestari ("Butler" in Finnish) is a Go-based personal AI butler assistant inspired by Geoffrey Litt's Stevens assistant. It stores "memories" in a single SQLite table, imports data from multiple sources (calendars, weather, manual input), and generates personalized daily briefs using Google Gemini API. The project emphasizes simplicity with a pure Go implementation for easy cross-compilation.
 
-## Common Commands
+## Development Workflow
 
-Build and development:
+**Build System**: Uses [Task](https://taskfile.dev/) runner instead of Make (see `Taskfile.yml`). Build depends on lint and test passing.
 
-- `task build` - Build the application for current OS/ARCH
-- `task build-linux` - Cross-compile for Linux AMD64
-- `task test` - Run all tests
-- `task lint` - Run golangci-lint (requires golangci-lint installed)
+**Critical Commands**:
+- `task build` - Build for current OS/ARCH (runs lint + test first)
+- `task build-linux` - Cross-compile for Linux AMD64 (CGO-free)
+- `task test` - Run all tests (deterministic, no external deps)
+- `task lint` - Run golangci-lint (required before commit)
 - `task deps` - Tidy Go module dependencies
 
-Application commands:
-
-- `task import-calendar` - Import calendar events from WebCal URLs
-- `task import-weather` - Import weather forecasts from MET Norway API
+**Application Commands**:
+- `task import-calendar` - Import WebCal/iCalendar events with smart/full_refresh modes
+- `task import-weather` - Import MET Norway weather forecasts  
 - `task import-water-quality` - Import water quality data for specific locations
-- `task generate-brief` - Generate and send daily brief
-- `task add-memory CONTENT="text" RELEVANCE_DATE="2025-01-01" SOURCE="manual"` - Add memory manually
-- `task init-config` - Initialize configuration (reads GEMINI_API_KEY, WEBCAL_URL from env)
+- `task generate-brief` - Generate daily brief using LLM and current memories
+- `task add-memory CONTENT="text" RELEVANCE_DATE="2025-01-01" SOURCE="manual"` - Add manual memory
+- `task init-config` - Initialize config (reads GEMINI_API_KEY, WEBCAL_URL from env)
 
-The application uses Task runner (Taskfile.yml) instead of Make. All CLI commands also work directly: `./build/hovimestari import-calendar --config=/path/to/config.json --log-level=debug`
+**Direct CLI Usage**: `./build/hovimestari <command> --config=/path/to/config.json --log-level=debug`
 
 ## Architecture
 
-**Entry Point**: `cmd/hovimestari/main.go` - Uses Cobra CLI framework with global flags for config path and log level
+**CLI Framework**: Uses `alecthomas/kong` (not Cobra) for command parsing in `cmd/hovimestari/main.go`. Global flags: `--config`, `--log-level`
 
-**Core Components**:
+**Core Data Flow**:
+1. **Import Phase**: Various importers fetch data → format as memories → store in SQLite
+2. **Brief Generation**: `internal/brief/brief.go` queries relevant memories → combines with prompts → sends to LLM → outputs to multiple destinations
 
-- `internal/store/store.go` - SQLite database operations for single `memories` table
-- `internal/config/viper.go` - Configuration management using Spf13/Viper with XDG directory support
-- `internal/brief/brief.go` - Daily brief generation logic combining memories with LLM
-- `internal/llm/gemini.go` - Google Gemini API client
-- `internal/logging/handler.go` - Custom structured logging handler for human-readable output
-- `internal/output/` - Multi-destination output system (CLI, Discord webhooks, Telegram bots)
+**Key Components**:
 
-**Importers**:
+- `internal/store/store.go` - Single SQLite table (`memories`) with source-based organization
+- `internal/config/viper.go` - Viper configuration with XDG Base Directory support  
+- `internal/brief/brief.go` - Brief generation orchestrator combining memories + LLM
+- `internal/llm/gemini.go` - Google Gemini API client (supports multiple models)
+- `internal/logging/handler.go` - Custom slog handler for human-readable output
+- `internal/output/` - Multi-destination system (CLI, Discord, Telegram)
 
-- `internal/importer/calendar/` - WebCal/iCalendar event importing with smart vs full_refresh modes
-- `internal/importer/weather/` - MET Norway API weather forecast importing
-- `cmd/hovimestari/commands/import_water_quality.go` - Manual water quality data importing
+**Importers Pattern**:
+- `internal/importer/calendar/` - WebCal imports with smart (upsert) vs full_refresh (replace_all) strategies
+- `internal/importer/weather/` - MET Norway API integration
+- Commands in `cmd/hovimestari/commands/` for manual data entry
 
-**Key Design Patterns**:
-
-- Single SQLite table (`memories`) stores all data with source prefixes for organization
-- XDG Base Directory Specification for config file locations
-- Modular output system supporting multiple destinations simultaneously
-- Pure Go SQLite via modernc.org/sqlite (no CGO) for easy cross-compilation
+**Design Principles**:
+- **Single Table Design**: All data in `memories` table with hierarchical `source` field (e.g., "calendar:work", "weather:helsinki")
+- **Pure Go**: Uses `modernc.org/sqlite` (no CGO) for cross-compilation without Docker
+- **XDG Compliance**: Config files follow standard (`~/.config/hovimestari/`)
+- **Extensible I/O**: Output system supports multiple simultaneous destinations
 
 ## Configuration
 
@@ -89,14 +91,33 @@ Tests exist for deterministic functions in `*_test.go` files:
 
 Run with `task test` or `go test ./...`. Tests avoid external dependencies (network, database, LLM calls).
 
-## Development Notes
+## Development Guidelines
 
-- Uses structured logging via `log/slog` with custom human-readable handler
-- SQLite queries use prepared statements and proper error handling
-- Calendar import supports both static calendars (smart updates) and dynamic ones (full refresh)
-- Weather data formatted for Finnish users with metric units
-- LLM prompts stored in `prompts.json` for easy modification
-- Cross-platform build support without CGO dependencies
-- Always run "task test" before committing to ensure deterministic behavior
-- Always run "task lint" before committing to ensure code quality
-- Use gofmt for formatting: `gofmt -w .`
+**Code Style**: Follow `.clinerules/go-codestyle.md` conventions:
+- Use `fmt.Errorf("failed to X: %w", err)` for error wrapping
+- Prefer standard library, use `alecthomas/kong` for CLI, `spf13/viper` for config
+- Use `modernc.org/sqlite` for SQLite (CGO-free)
+- Use `slog` for logging, `fmt.Printf` for interactive output
+
+**Testing Strategy**: 
+- Tests avoid external dependencies (network, database, LLM calls)
+- Focus on deterministic functions: URL conversion, data formatting, parsing
+- Examples: `calendar_test.go` (event formatting), `weather_test.go` (forecast formatting)
+- Run `task test` (includes in build pipeline)
+
+**Adding New Features**:
+- **New Importer**: Create package in `internal/importer/`, implement similar interface to calendar importer
+- **New Command**: Add file in `cmd/hovimestari/commands/`, follow Kong CLI pattern
+- **New Config**: Update `Config` struct in `internal/config/viper.go`, add to `config.example.json`
+
+**Memory Storage Pattern**:
+```go
+// All data stored as memories with structured content
+content := fmt.Sprintf("Calendar Event: %s from %s to %s", summary, start, end)
+source := "calendar:" + calendarName  // Hierarchical source naming
+uid := event.UID  // Optional unique identifier for deduplication
+```
+
+**Cross-Compilation**: Pure Go implementation enables simple `GOOS=linux GOARCH=amd64 go build` without Docker or CGO
+
+**Commit Requirements**: Always run `task build` (includes lint + test) before commits

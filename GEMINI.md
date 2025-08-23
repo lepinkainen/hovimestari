@@ -28,23 +28,31 @@ The project follows a modular structure, separating concerns into distinct packa
 This project uses [Task](https://taskfile.dev/) as a command runner instead of Make. All common development tasks are defined in `Taskfile.yml`.
 
 - **Build the application**:
+
   ```bash
   task build
   ```
+
 - **Run all tests**:
+
   ```bash
   task test
   ```
+
 - **Run linter**:
+
   ```bash
   task lint
   ```
+
 - **Tidy dependencies**:
+
   ```bash
   task deps
   ```
 
 Application commands are executed via the compiled binary. For example:
+
 ```bash
 # Import calendar events
 ./build/hovimestari import-calendar
