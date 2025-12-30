@@ -80,6 +80,10 @@ type Config struct {
 
 	// Water Quality configuration
 	WaterQualityLocations []WaterQualityLocation `json:"water_quality_locations,omitempty" mapstructure:"water_quality_locations"`
+
+	// School Lunch configuration
+	SchoolLunchURL  string `json:"school_lunch_url,omitempty" mapstructure:"school_lunch_url"`
+	SchoolLunchName string `json:"school_lunch_name,omitempty" mapstructure:"school_lunch_name"`
 }
 
 // validateRequiredFields validates that required configuration fields are present
@@ -170,13 +174,20 @@ func validateWaterQualityLocations(config *Config) error {
 	return nil
 }
 
+// validateSchoolLunch validates the school lunch configuration
+func validateSchoolLunch(config *Config) error {
+	// School lunch is optional - no validation needed
+	// If SchoolLunchName is empty, the feature is disabled
+	return nil
+}
+
 // InitViper initializes the Viper configuration system
 // It sets up the search paths for configuration files and loads the configuration
 // If configFileFlag is not empty, it will be used as the configuration file path
 // Otherwise, it will search for config.json in the XDG config directory and executable directory
 func InitViper(configFileFlag string) error {
 	// Set default values for fields not expected to be in the config file initially
-	viper.SetDefault("gemini_model", "gemini-2.0-flash")
+	viper.SetDefault("gemini_model", "gemini-2.5-flash")
 	viper.SetDefault("output_language", "Finnish")
 	viper.SetDefault("output_format", "cli")
 	viper.SetDefault("days_ahead", 2)
@@ -369,6 +380,10 @@ func GetConfig() (*Config, error) {
 	}
 
 	if err := validateWaterQualityLocations(cfg); err != nil {
+		return nil, err
+	}
+
+	if err := validateSchoolLunch(cfg); err != nil {
 		return nil, err
 	}
 

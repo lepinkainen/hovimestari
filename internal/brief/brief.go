@@ -40,6 +40,11 @@ func (g *Generator) getRelevantMemoryStrings(startDate, endDate time.Time) ([]st
 	// Convert memories to strings
 	var memoryStrings []string
 	for _, memory := range memories {
+		// Skip weather memories as they are handled separately in getWeatherData()
+		if strings.HasPrefix(memory.Source, "weather-metno:") {
+			continue
+		}
+		
 		var dateInfo string
 		if memory.RelevanceDate != nil {
 			dateInfo = fmt.Sprintf(" (relevant on %s)", memory.RelevanceDate.Format("2006-01-02"))

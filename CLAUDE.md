@@ -11,6 +11,7 @@ Hovimestari ("Butler" in Finnish) is a Go-based personal AI butler assistant ins
 **Build System**: Uses [Task](https://taskfile.dev/) runner instead of Make (see `Taskfile.yml`). Build depends on lint and test passing.
 
 **Critical Commands**:
+
 - `task build` - Build for current OS/ARCH (runs lint + test first)
 - `task build-linux` - Cross-compile for Linux AMD64 (CGO-free)
 - `task test` - Run all tests (deterministic, no external deps)
@@ -18,39 +19,65 @@ Hovimestari ("Butler" in Finnish) is a Go-based personal AI butler assistant ins
 - `task deps` - Tidy Go module dependencies
 
 **Application Commands**:
+
 - `task import-calendar` - Import WebCal/iCalendar events with smart/full_refresh modes
-- `task import-weather` - Import MET Norway weather forecasts  
+- `task import-weather` - Import MET Norway weather forecasts
 - `task import-water-quality` - Import water quality data for specific locations
 - `task generate-brief` - Generate daily brief using LLM and current memories
 - `task add-memory CONTENT="text" RELEVANCE_DATE="2025-01-01" SOURCE="manual"` - Add manual memory
 - `task init-config` - Initialize config (reads GEMINI_API_KEY, WEBCAL_URL from env)
+- `task run` - Build and run the application
+- `task publish` - Deploy binary to remote server
+
+**Utility Commands**:
+
+- `task upgrade-deps` - Upgrade all Go dependencies
+- `task clean` - Clean all build artifacts
+- `task clean-build` - Clean build directory only
+- `task clean-linux` - Clean Linux build artifacts
 
 **Direct CLI Usage**: `./build/hovimestari <command> --config=/path/to/config.json --log-level=debug`
+
+**Available CLI Commands**:
+
+- `import-calendar` - Import calendar events from WebCal/iCalendar URLs
+- `import-weather` - Import weather forecasts from MET Norway
+- `import-water-quality` - Import water quality data
+- `generate-brief` - Generate personalized daily brief
+- `show-brief-context` - Show context that would be sent to LLM without generating brief (debug)
+- `add-memory` - Add manual memory entry
+- `init-config` - Initialize configuration file
+- `list-models` - List available Gemini LLM models
 
 ## Architecture
 
 **CLI Framework**: Uses `alecthomas/kong` (not Cobra) for command parsing in `cmd/hovimestari/main.go`. Global flags: `--config`, `--log-level`
 
 **Core Data Flow**:
+
 1. **Import Phase**: Various importers fetch data → format as memories → store in SQLite
 2. **Brief Generation**: `internal/brief/brief.go` queries relevant memories → combines with prompts → sends to LLM → outputs to multiple destinations
 
 **Key Components**:
 
-- `internal/store/store.go` - Single SQLite table (`memories`) with source-based organization
-- `internal/config/viper.go` - Viper configuration with XDG Base Directory support  
+- `internal/store/store.go` - Two SQLite tables (`memories` and `calendar_events`) with source-based organization
+- `internal/config/viper.go` - Viper configuration with XDG Base Directory support
 - `internal/brief/brief.go` - Brief generation orchestrator combining memories + LLM
 - `internal/llm/gemini.go` - Google Gemini API client (supports multiple models)
 - `internal/logging/handler.go` - Custom slog handler for human-readable output
 - `internal/output/` - Multi-destination system (CLI, Discord, Telegram)
 
 **Importers Pattern**:
+
 - `internal/importer/calendar/` - WebCal imports with smart (upsert) vs full_refresh (replace_all) strategies
 - `internal/importer/weather/` - MET Norway API integration
 - Commands in `cmd/hovimestari/commands/` for manual data entry
 
 **Design Principles**:
-- **Single Table Design**: All data in `memories` table with hierarchical `source` field (e.g., "calendar:work", "weather:helsinki")
+
+- **Two-Table Design**:
+  - `memories` table for general memories (weather, manual entries, etc.) with hierarchical `source` field (e.g., "weather:helsinki", "manual")
+  - `calendar_events` table for structured calendar data with proper datetime columns
 - **Pure Go**: Uses `modernc.org/sqlite` (no CGO) for cross-compilation without Docker
 - **XDG Compliance**: Config files follow standard (`~/.config/hovimestari/`)
 - **Extensible I/O**: Output system supports multiple simultaneous destinations
@@ -74,12 +101,24 @@ Hovimestari ("Butler" in Finnish) is a Go-based personal AI butler assistant ins
 
 ## Memory System
 
-All data is stored as "memories" in SQLite with:
+Data is stored in two SQLite tables:
 
-- `content` - Formatted text (e.g., "Calendar Event: Meeting from 2025-01-01 14:00 to 15:00")
-- `source` - Hierarchical source identifier (e.g., "calendar:work", "weather:helsinki", "manual")
+**1. `memories` table** - For general memories (weather, manual entries):
+
+- `content` - Formatted text (e.g., "Weather: Sunny, 20°C in Helsinki")
+- `source` - Hierarchical source identifier (e.g., "weather:helsinki", "manual")
 - `relevance_date` - When memory is relevant (used for brief filtering)
-- `uid` - Optional unique identifier (prevents calendar event duplicates)
+- `uid` - Optional unique identifier for deduplication
+
+**2. `calendar_events` table** - For structured calendar data:
+
+- `uid` - Unique event identifier (prevents duplicates)
+- `summary` - Event title/summary
+- `start_time`, `end_time` - Event datetime range
+- `location` - Event location (optional)
+- `description` - Event description (optional)
+- `source` - Hierarchical source identifier (e.g., "calendar:work", "calendar:personal")
+- `created_at` - When the event was imported
 
 ## Testing
 
@@ -94,28 +133,45 @@ Run with `task test` or `go test ./...`. Tests avoid external dependencies (netw
 ## Development Guidelines
 
 **Code Style**: Follow `.clinerules/go-codestyle.md` conventions:
+
 - Use `fmt.Errorf("failed to X: %w", err)` for error wrapping
 - Prefer standard library, use `alecthomas/kong` for CLI, `spf13/viper` for config
 - Use `modernc.org/sqlite` for SQLite (CGO-free)
 - Use `slog` for logging, `fmt.Printf` for interactive output
 
-**Testing Strategy**: 
+**Testing Strategy**:
+
 - Tests avoid external dependencies (network, database, LLM calls)
 - Focus on deterministic functions: URL conversion, data formatting, parsing
 - Examples: `calendar_test.go` (event formatting), `weather_test.go` (forecast formatting)
 - Run `task test` (includes in build pipeline)
 
 **Adding New Features**:
+
 - **New Importer**: Create package in `internal/importer/`, implement similar interface to calendar importer
 - **New Command**: Add file in `cmd/hovimestari/commands/`, follow Kong CLI pattern
 - **New Config**: Update `Config` struct in `internal/config/viper.go`, add to `config.example.json`
 
 **Memory Storage Pattern**:
+
 ```go
-// All data stored as memories with structured content
-content := fmt.Sprintf("Calendar Event: %s from %s to %s", summary, start, end)
-source := "calendar:" + calendarName  // Hierarchical source naming
-uid := event.UID  // Optional unique identifier for deduplication
+// Pattern 1: General memories (weather, manual entries)
+content := fmt.Sprintf("Weather: %s, %.1f°C in %s", condition, temp, location)
+source := "weather:" + locationName  // Hierarchical source naming
+uid := ""  // Optional unique identifier for deduplication
+// Store in memories table
+
+// Pattern 2: Calendar events (stored in dedicated table)
+calendarEvent := CalendarEvent{
+    UID:         event.UID,
+    Summary:     event.Summary,
+    StartTime:   event.Start,
+    EndTime:     event.End,
+    Location:    event.Location,
+    Description: event.Description,
+    Source:      "calendar:" + calendarName,  // Hierarchical source naming
+}
+// Store in calendar_events table
 ```
 
 **Cross-Compilation**: Pure Go implementation enables simple `GOOS=linux GOARCH=amd64 go build` without Docker or CGO

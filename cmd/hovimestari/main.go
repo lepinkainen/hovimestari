@@ -14,6 +14,22 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// Version is set at build time via -ldflags
+var Version string
+
+// VersionCmd defines the version command for Kong
+type VersionCmd struct{}
+
+// Run executes the version command
+func (cmd *VersionCmd) Run() error {
+	if Version != "" {
+		fmt.Printf("%s\n", Version)
+	} else {
+		fmt.Println("unknown (built without version information)")
+	}
+	return nil
+}
+
 func main() {
 	var cli CLI
 	ctx := kong.Parse(&cli,
@@ -23,9 +39,12 @@ func main() {
 	)
 
 	// Initialize config and logging before command execution
-	if err := initializeApp(cli.Config, cli.LogLevel); err != nil {
-		fmt.Fprintf(os.Stderr, "Initialization failed: %v\n", err)
-		os.Exit(1)
+	// Skip initialization for version command as it doesn't need config
+	if ctx.Command() != "version" {
+		if err := initializeApp(cli.Config, cli.LogLevel); err != nil {
+			fmt.Fprintf(os.Stderr, "Initialization failed: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	// Execute the selected command

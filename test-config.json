@@ -1,0 +1,61 @@
+{
+  "db_path": "test-memories.db",
+  "gemini_api_key": "AIzaSyAKUqTYyHxP43nymwVz4Vi4T7N63i-bLxQ",
+  "gemini_model": "gemini-2.5-pro",
+  "outputLanguage": "Finnish",
+  "promptFilePath": "prompts.json",
+  "location_name": "Järvenpää",
+  "latitude": 60.4738,
+  "longitude": 25.089,
+  "timezone": "Europe/Helsinki",
+  "days_ahead": 1,
+  "calendars": [
+    {
+      "name": "Family Calendar",
+      "url": "webcal://p40-caldav.icloud.com/published/2/ODk5OTQyNzU4OTk5NDI3NbHIfj7j802rVZ6aDqMYanDTpWr6kNAJpjckrPO9NWmcN37l6NymuxnueKybmxSK7qr943X1qaBDIgd28kWErXI"
+    },
+    {
+      "name": "Holidays in Finland",
+      "url": "https://calendars.icloud.com/holidays/fi_fi.ics/",
+      "update_mode": "smart"
+    },
+    {
+      "name": "Holidays in Finland (Google)",
+      "url": "https://www.google.com/calendar/ical/fi.finnish%23holiday%40group.v.calendar.google.com/public/basic.ics",
+      "update_mode": "smart"
+    },
+    {
+      "name": "Important days in Finland",
+      "url": "https://www.webcal.guru/fi-FI/lataa_kalenteri?calendar_instance_id=180",
+      "update_mode": "smart"
+    }
+  ],
+  "family": [
+    {
+      "name": "Riku",
+      "birthday": "1979-09-17",
+      "telegram_id": "shrike"
+    },
+    {
+      "name": "Elina",
+      "birthday": "1979-11-07"
+    },
+    {
+      "name": "Sanni",
+      "birthday": "2012-06-14"
+    }
+  ],
+  "water_quality_locations": [
+    {
+      "name": "Hietaniemi"
+    },
+    {
+      "name": "Piraeus"
+    }
+  ],
+  "outputs": {
+    "enable_cli": true
+  },
+  "school_lunch_url": "https://ruoka.palmia.fi/fi/ravintola/ravintola/jarvenpaan-yhteiskoulu/",
+  "school_lunch_name": "Järvenpään yhteiskoulu"
+}
