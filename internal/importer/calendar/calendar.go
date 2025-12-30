@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/apognu/gocal"
 	"github.com/lepinkainen/hovimestari/internal/store"
@@ -66,7 +67,10 @@ func NewImporter(store *store.Store, webCalURL string, calendarName string, upda
 // Import fetches calendar events and stores them in the database
 func (i *Importer) Import(ctx context.Context) error {
 	// Fetch the iCalendar data
-	resp, err := http.Get(i.webCalURL)
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+	resp, err := client.Get(i.webCalURL)
 	if err != nil {
 		return fmt.Errorf("failed to fetch calendar data: %w", err)
 	}

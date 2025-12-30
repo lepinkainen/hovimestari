@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // TelegramOutputter sends content to a Telegram chat
@@ -93,7 +94,9 @@ func (o *TelegramOutputter) Send(ctx context.Context, content string) error {
 
 	// Send the request
 	slog.Debug("Sending HTTP request to Telegram API", "host", "api.telegram.org", "chat_id", o.ChatID)
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		slog.Error("Failed to send Telegram API request", "error", err)

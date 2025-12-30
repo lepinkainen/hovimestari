@@ -78,7 +78,9 @@ func GetForecast(latitude, longitude float64) (string, error) {
 	req.Header.Set("User-Agent", UserAgent)
 
 	// Make the request
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch weather data: %w", err)
@@ -174,7 +176,9 @@ func GetMultiDayForecast(latitude, longitude float64) ([]DailyForecast, error) {
 	req.Header.Set("User-Agent", UserAgent)
 
 	// Make the request
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch weather data: %w", err)
@@ -313,7 +317,9 @@ func GetCurrentDayHourlyForecast(latitude, longitude float64) (string, error) {
 	req.Header.Set("User-Agent", UserAgent)
 
 	// Make the request
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch weather data: %w", err)

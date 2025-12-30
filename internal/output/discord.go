@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 )
 
 // DiscordOutputter sends content to a Discord webhook
@@ -55,7 +56,9 @@ func (o *DiscordOutputter) Send(ctx context.Context, content string) error {
 
 	// Send the request
 	slog.Debug("Sending HTTP request to Discord webhook")
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		slog.Error("Failed to send Discord webhook request", "error", err)
