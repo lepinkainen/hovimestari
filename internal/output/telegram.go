@@ -32,28 +32,28 @@ func escapeMarkdownV2(text string) string {
 	// We'll preserve: * for bold, ** for bold, _ for italic
 	// We need to escape these chars when they're not part of intended formatting:
 	// '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'
-	
+
 	// First escape the definitely problematic characters
 	problematicChars := []string{"[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!"}
-	
+
 	result := text
 	for _, char := range problematicChars {
 		result = strings.ReplaceAll(result, char, "\\"+char)
 	}
-	
+
 	// For underscores, we need to be careful - escape single underscores but preserve double ones
 	// This is a simple approach - we could make it more sophisticated
 	result = strings.ReplaceAll(result, "_", "\\_")
-	
+
 	// For asterisks, we need to preserve ** for bold formatting
 	// Replace single * that aren't part of ** with escaped version
 	// This is complex, so for now let's escape them all except in ** patterns
-	
+
 	// Simple approach: preserve **text** patterns by temporarily replacing them
 	result = strings.ReplaceAll(result, "**", "DOUBLE_ASTERISK_PLACEHOLDER")
 	result = strings.ReplaceAll(result, "*", "\\*")
 	result = strings.ReplaceAll(result, "DOUBLE_ASTERISK_PLACEHOLDER", "**")
-	
+
 	return result
 }
 
@@ -92,7 +92,7 @@ func (o *TelegramOutputter) Send(ctx context.Context, content string) error {
 	req.Header.Set("Content-Type", "application/json")
 
 	// Send the request
-	slog.Debug("Sending HTTP request to Telegram API", "url", url)
+	slog.Debug("Sending HTTP request to Telegram API", "host", "api.telegram.org", "chat_id", o.ChatID)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
