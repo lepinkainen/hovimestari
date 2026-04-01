@@ -11,7 +11,8 @@ type CLI struct {
 	ImportCalendar     commands.ImportCalendarCmd     `kong:"cmd,help='Import calendar events from WebCal URLs'"`
 	ImportWeather      commands.ImportWeatherCmd      `kong:"cmd,help='Import weather forecasts from MET Norway API'"`
 	ImportWaterQuality commands.ImportWaterQualityCmd `kong:"cmd,help='Import water quality data for specific locations'"`
-	ImportSchoolLunch  commands.ImportSchoolLunchCmd  `kong:"cmd,help='Import school lunch menus'"`
+	ImportSchoolLunch      commands.ImportSchoolLunchCmd      `kong:"cmd,help='Import school lunch menus'"`
+	ImportElectricityPrice commands.ImportElectricityPriceCmd `kong:"cmd,help='Import electricity prices from ENTSO-E'"`
 	GenerateBrief      commands.GenerateBriefCmd      `kong:"cmd,help='Generate and send daily brief'"`
 	ShowBriefContext   commands.ShowBriefContextCmd   `kong:"cmd,help='Show context given to LLM without generating brief'"`
 	AddMemory          commands.AddMemoryCmd          `kong:"cmd,help='Add memory manually to database'"`

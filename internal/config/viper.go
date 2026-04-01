@@ -85,6 +85,10 @@ type Config struct {
 	// School Lunch configuration
 	SchoolLunchURL  string `json:"school_lunch_url,omitempty" mapstructure:"school_lunch_url"`
 	SchoolLunchName string `json:"school_lunch_name,omitempty" mapstructure:"school_lunch_name"`
+
+	// ENTSO-E electricity price configuration
+	EntsoeAPIKey string `json:"entsoe_api_key,omitempty" mapstructure:"entsoe_api_key"`
+	EntsoeZone   string `json:"entsoe_zone,omitempty" mapstructure:"entsoe_zone"` // EIC zone code, e.g. "10YFI-1--------U" for Finland
 }
 
 // validateRequiredFields validates that required configuration fields are present
@@ -214,6 +218,9 @@ func InitViper(configFileFlag string) error {
 	}
 	if err := viper.BindEnv("log_level", "HOVIMESTARI_LOG_LEVEL"); err != nil {
 		slog.Warn("Failed to bind log_level environment variable", "error", err)
+	}
+	if err := viper.BindEnv("entsoe_api_key", "HOVIMESTARI_ENTSOE_API_KEY"); err != nil {
+		slog.Warn("Failed to bind entsoe_api_key environment variable", "error", err)
 	}
 
 	// Set up key mappings for inconsistent casing in the config file

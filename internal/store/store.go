@@ -170,6 +170,16 @@ func (s *Store) GetRelevantMemories(startDate, endDate time.Time) ([]Memory, err
 	return memories, nil
 }
 
+// DeleteMemoriesBySourceAndDate deletes all memories with the given source and relevance date
+func (s *Store) DeleteMemoriesBySourceAndDate(source string, relevanceDate time.Time) error {
+	query := `DELETE FROM memories WHERE source = ? AND relevance_date = ?`
+	_, err := s.db.Exec(query, source, relevanceDate)
+	if err != nil {
+		return fmt.Errorf("failed to delete memories: %w", err)
+	}
+	return nil
+}
+
 // MemoryExists checks if a memory with the given source, uid, and relevance date already exists
 func (s *Store) MemoryExists(source string, uid string, relevanceDate time.Time) (bool, error) {
 	query := `

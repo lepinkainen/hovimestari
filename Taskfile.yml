@@ -168,6 +168,12 @@ tasks:
     cmds:
       - "{{.BINARY}} import-school-lunch"
 
+  import-electricity-price:
+    desc: Import electricity prices from ENTSO-E
+    deps: [build]
+    cmds:
+      - "{{.BINARY}} import-electricity-price"
+
   import-all:
     desc: Run all automated imports (calendar, weather, school lunch)
     cmds:
