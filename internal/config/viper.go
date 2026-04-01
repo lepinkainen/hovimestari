@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -76,7 +77,7 @@ type Config struct {
 
 	// Output configuration
 	OutputFormat string       `json:"output_format" mapstructure:"output_format"` // "cli", "telegram", etc. (legacy, use Outputs instead)
-	Outputs      OutputConfig `json:"outputs,omitempty" mapstructure:"outputs"`
+	Outputs      OutputConfig `json:"outputs,omitzero" mapstructure:"outputs"`
 
 	// Water Quality configuration
 	WaterQualityLocations []WaterQualityLocation `json:"water_quality_locations,omitempty" mapstructure:"water_quality_locations"`
@@ -248,7 +249,7 @@ func InitViper(configFileFlag string) error {
 
 	// Attempt to read the configuration
 	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		if _, ok := errors.AsType[viper.ConfigFileNotFoundError](err); ok {
 			// Config file not found, but this might be expected if using defaults/env vars
 			// Log it informatively but don't treat it as a fatal error yet
 			fmt.Fprintf(os.Stderr, "Warning: No configuration file found. Using defaults and environment variables.\n")

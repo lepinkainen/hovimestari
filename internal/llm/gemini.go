@@ -114,54 +114,51 @@ func (c *Client) BuildBriefPrompt(memories []string, userInfo map[string]string,
 		ongoingEvents := userInfo["OngoingEvents"]
 
 		if date != "" {
-			contextBuilder.WriteString(fmt.Sprintf("- Current Date: %s\n", date))
+			fmt.Fprintf(&contextBuilder, "- Current Date: %s\n", date)
 		}
 
 		if currentTime != "" {
-			contextBuilder.WriteString(fmt.Sprintf("- Current Time: %s\n", currentTime))
+			fmt.Fprintf(&contextBuilder, "- Current Time: %s\n", currentTime)
 		}
 
 		if timezone != "" {
-			contextBuilder.WriteString(fmt.Sprintf("- Timezone: %s\n", timezone))
+			fmt.Fprintf(&contextBuilder, "- Timezone: %s\n", timezone)
 		}
 
 		if location != "" {
-			contextBuilder.WriteString(fmt.Sprintf("- Location: %s\n", location))
+			fmt.Fprintf(&contextBuilder, "- Location: %s\n", location)
 		}
 
 		if family != "" {
-			contextBuilder.WriteString(fmt.Sprintf("- Family Members: %s\n", family))
+			fmt.Fprintf(&contextBuilder, "- Family Members: %s\n", family)
 		}
 
 		if weather != "" {
-			contextBuilder.WriteString(fmt.Sprintf("- Today's Weather: %s\n", weather))
+			fmt.Fprintf(&contextBuilder, "- Today's Weather: %s\n", weather)
 		}
 
 		if futureWeather != "" {
 			contextBuilder.WriteString("- Upcoming Weather Forecasts:\n")
-			forecasts := strings.Split(futureWeather, "\n")
-			for _, forecast := range forecasts {
-				contextBuilder.WriteString(fmt.Sprintf("  * %s\n", forecast))
+			for forecast := range strings.SplitSeq(futureWeather, "\n") {
+				fmt.Fprintf(&contextBuilder, "  * %s\n", forecast)
 			}
 		}
 
 		if weatherChanges != "" {
 			contextBuilder.WriteString("- Weather Forecast Changes:\n")
-			changes := strings.Split(weatherChanges, "\n")
-			for _, change := range changes {
-				contextBuilder.WriteString(fmt.Sprintf("  * %s\n", change))
+			for change := range strings.SplitSeq(weatherChanges, "\n") {
+				fmt.Fprintf(&contextBuilder, "  * %s\n", change)
 			}
 		}
 
 		if birthdays != "" {
-			contextBuilder.WriteString(fmt.Sprintf("- Birthdays Today: %s\n", birthdays))
+			fmt.Fprintf(&contextBuilder, "- Birthdays Today: %s\n", birthdays)
 		}
 
 		if ongoingEvents != "" {
 			contextBuilder.WriteString("- Currently Ongoing:\n")
-			events := strings.Split(ongoingEvents, "\n")
-			for _, event := range events {
-				contextBuilder.WriteString(fmt.Sprintf("  * %s\n", event))
+			for event := range strings.SplitSeq(ongoingEvents, "\n") {
+				fmt.Fprintf(&contextBuilder, "  * %s\n", event)
 			}
 		}
 	}
@@ -169,7 +166,7 @@ func (c *Client) BuildBriefPrompt(memories []string, userInfo map[string]string,
 	// Format memories
 	var memoryBuilder strings.Builder
 	for _, memory := range memories {
-		memoryBuilder.WriteString(fmt.Sprintf("- %s\n", memory))
+		fmt.Fprintf(&memoryBuilder, "- %s\n", memory)
 	}
 
 	// Create the prompt content with context, memories, and language
@@ -195,7 +192,7 @@ func (c *Client) GenerateResponse(ctx context.Context, query string, memories []
 	// Format memories
 	var memoryBuilder strings.Builder
 	for _, memory := range memories {
-		memoryBuilder.WriteString(fmt.Sprintf("- %s\n", memory))
+		fmt.Fprintf(&memoryBuilder, "- %s\n", memory)
 	}
 
 	// Create the prompt content with query, memories, and language

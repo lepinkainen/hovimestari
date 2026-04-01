@@ -180,7 +180,7 @@ func formatCalendarEventString(event store.CalendarEvent) string {
 	var builder strings.Builder
 
 	// Add the event summary
-	builder.WriteString(fmt.Sprintf("Calendar Event: %s", event.Summary))
+	fmt.Fprintf(&builder, "Calendar Event: %s", event.Summary)
 
 	// Add the event time
 	startTime := event.StartTime.Format("2006-01-02 15:04")
@@ -191,19 +191,19 @@ func formatCalendarEventString(event store.CalendarEvent) string {
 		if event.StartTime.Day() != event.EndTime.Day() {
 			endTime = event.EndTime.Format("2006-01-02 15:04")
 		}
-		builder.WriteString(fmt.Sprintf(" from %s to %s", startTime, endTime))
+		fmt.Fprintf(&builder, " from %s to %s", startTime, endTime)
 	} else {
-		builder.WriteString(fmt.Sprintf(" at %s", startTime))
+		fmt.Fprintf(&builder, " at %s", startTime)
 	}
 
 	// Add the location if available
 	if event.Location != nil && *event.Location != "" {
-		builder.WriteString(fmt.Sprintf(" at %s", *event.Location))
+		fmt.Fprintf(&builder, " at %s", *event.Location)
 	}
 
 	// Add the description if available
 	if event.Description != nil && *event.Description != "" {
-		builder.WriteString(fmt.Sprintf(". Description: %s", *event.Description))
+		fmt.Fprintf(&builder, ". Description: %s", *event.Description)
 	}
 
 	return builder.String()

@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 )
@@ -290,13 +291,9 @@ func GetMultiDayForecast(latitude, longitude float64) ([]DailyForecast, error) {
 	}
 
 	// Sort by date
-	for i := 0; i < len(result); i++ {
-		for j := i + 1; j < len(result); j++ {
-			if result[i].Date.After(result[j].Date) {
-				result[i], result[j] = result[j], result[i]
-			}
-		}
-	}
+	slices.SortFunc(result, func(a, b DailyForecast) int {
+		return a.Date.Compare(b.Date)
+	})
 
 	// Return all available days
 	return result, nil

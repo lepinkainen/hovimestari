@@ -77,7 +77,7 @@ func (h *HumanReadableHandler) Handle(ctx context.Context, r slog.Record) error 
 	// Build the key-value pairs
 	var kvPairs strings.Builder
 	r.Attrs(func(a slog.Attr) bool {
-		kvPairs.WriteString(fmt.Sprintf("  %s=%v", a.Key, a.Value.Any()))
+		fmt.Fprintf(&kvPairs, "  %s=%v", a.Key, a.Value.Any())
 		return true
 	})
 
