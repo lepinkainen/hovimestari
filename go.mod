@@ -6,7 +6,7 @@ require (
 	github.com/alecthomas/kong v1.12.0
 	github.com/apognu/gocal v0.9.1
 	github.com/google/generative-ai-go v0.19.0
-	github.com/lepinkainen/palmia-lunch v0.0.0-20251218210014-89ad7e763a38
+	github.com/lepinkainen/palmia-lunch v0.0.0-20260401212639-53252da8e3b1
 	github.com/spf13/viper v1.20.1
 	google.golang.org/api v0.229.0
 	modernc.org/sqlite v1.37.0
