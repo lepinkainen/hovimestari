@@ -29,6 +29,16 @@ func NewTelegramOutputter(botToken, chatID string) *TelegramOutputter {
 // escapeMarkdownV2 escapes special characters for Telegram's MarkdownV2 format
 // while preserving intentional markdown formatting
 func escapeMarkdownV2(text string) string {
+	// Telegram MarkdownV2 does not support # headings; convert them to bold
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		if strings.HasPrefix(line, "#") {
+			headingText := strings.TrimLeft(line, "# ")
+			lines[i] = "**" + headingText + "**"
+		}
+	}
+	result := strings.Join(lines, "\n")
+
 	// Characters that need to be escaped, but we'll preserve some markdown
 	// We'll preserve: * for bold, ** for bold, _ for italic
 	// We need to escape these chars when they're not part of intended formatting:
@@ -37,7 +47,6 @@ func escapeMarkdownV2(text string) string {
 	// First escape the definitely problematic characters
 	problematicChars := []string{"[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!"}
 
-	result := text
 	for _, char := range problematicChars {
 		result = strings.ReplaceAll(result, char, "\\"+char)
 	}
