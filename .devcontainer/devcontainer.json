@@ -4,7 +4,7 @@
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/go:1": {
-      "version": "1.24"
+      "version": "1.26"
     }
   },
   "postCreateCommand": "go mod tidy",

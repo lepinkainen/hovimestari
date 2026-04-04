@@ -210,3 +210,4 @@ tasks:
     deps: [build-linux]
     cmds:
       - scp {{.BINARY}}-linux-amd64 "$RELEASE_SERVER:$RELEASE_PATH"
+      - scp prompts.json "$RELEASE_SERVER:.config/hovimestari/" # Also upload prompts if needed
