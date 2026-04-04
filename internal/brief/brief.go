@@ -37,12 +37,21 @@ func (g *Generator) getRelevantMemoryStrings(startDate, endDate time.Time) ([]st
 		return nil, nil, fmt.Errorf("failed to get relevant memories: %w", err)
 	}
 
+	today := time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 0, 0, 0, 0, startDate.Location())
+
 	// Convert memories to strings
 	var memoryStrings []string
 	for _, memory := range memories {
 		// Skip weather memories as they are handled separately in getWeatherData()
 		if strings.HasPrefix(memory.Source, "weather-metno:") {
 			continue
+		}
+		// School lunch is only relevant for today — future days will be shown on their own morning
+		if strings.HasPrefix(memory.Source, "schoollunch:") && memory.RelevanceDate != nil {
+			memDate := time.Date(memory.RelevanceDate.Year(), memory.RelevanceDate.Month(), memory.RelevanceDate.Day(), 0, 0, 0, 0, startDate.Location())
+			if !memDate.Equal(today) {
+				continue
+			}
 		}
 		
 		var dateInfo string
@@ -237,7 +246,7 @@ func (g *Generator) BuildBriefContext(ctx context.Context, daysAhead int) ([]str
 	}
 
 	now := time.Now().In(loc)
-	startDate := now
+	startDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 	endDate := startDate.AddDate(0, 0, daysAhead)
 
 	// Get relevant memories and convert to strings
