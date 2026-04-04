@@ -14,7 +14,8 @@ import (
 
 // GenerateBriefCmd defines the generate brief command for Kong
 type GenerateBriefCmd struct {
-	DaysAhead int `kong:"help='Number of days ahead to include in the brief (overrides config value)',default=0"`
+	DaysAhead int  `kong:"help='Number of days ahead to include in the brief (overrides config value)',default=0"`
+	CLIOnly   bool `kong:"help='Output to CLI only, ignoring Discord/Telegram config',name='cli-only'"`
 }
 
 // Run executes the generate brief command
@@ -37,18 +38,25 @@ func (cmd *GenerateBriefCmd) Run() error {
 		daysAhead = 2
 	}
 
-	return runGenerateBrief(context.Background(), daysAhead)
+	return runGenerateBrief(context.Background(), daysAhead, cmd.CLIOnly)
 }
 
 // runGenerateBrief runs the generate brief command, generating a daily brief based on
 // memories stored in the database. It retrieves relevant memories for the current date
 // and the specified number of days ahead, then uses the LLM to generate a natural language
 // brief. The brief is then sent to all configured output channels (CLI, Discord, Telegram).
-func runGenerateBrief(ctx context.Context, daysAhead int) error {
+func runGenerateBrief(ctx context.Context, daysAhead int, cliOnly bool) error {
 	// Get the configuration
 	cfg, err := config.GetConfig()
 	if err != nil {
 		return fmt.Errorf("failed to get configuration: %w", err)
+	}
+
+	if cliOnly {
+		cfg.Outputs.EnableCLI = true
+		cfg.Outputs.DiscordWebhookURLs = nil
+		cfg.Outputs.TelegramBots = nil
+		cfg.OutputFormat = "cli"
 	}
 
 	// Create the store
