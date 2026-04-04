@@ -39,7 +39,10 @@
     "",
     "5. **Birthdays:** If any family members have a birthday today, highlight it prominently with congratulations near the beginning of the brief.",
     "",
-    "6. **Sun Protection:** If the weather forecast for any day includes a 'Max UV Index' value of 3 or higher, add a brief reminder (e.g., 'Remember sunscreen.') for that day."
+    "6. **Sun Protection:** If the weather forecast for any day includes a 'Max UV Index' value of 3 or higher, add a brief reminder (e.g., 'Remember sunscreen.') for that day.",
+    "",
+    "7. **Electricity price:** If electricity price information is available for today, include a brief summary of the price trend (e.g., 'Electricity prices are expected to be high in the afternoon.') after the weather information for today.",
+    "   * If specific price values are provided, mention the expected price range for the day (e.g., 'Electricity prices are expected to range from X to Y €/kWh.')."
   ],
   "userQuery": [
     "You are Hovimestari, a helpful butler assistant. Your task is to respond to the user's query in %LANG% based on the following information:",
