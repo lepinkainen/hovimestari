@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/lepinkainen/hovimestari/internal/config"
 	schoollunchimporter "github.com/lepinkainen/hovimestari/internal/importer/schoollunch"
@@ -50,10 +51,16 @@ func runImportSchoolLunch(ctx context.Context) error {
 		return fmt.Errorf("failed to initialize store: %w", err)
 	}
 
+	tz, err := time.LoadLocation(cfg.Timezone)
+	if err != nil {
+		slog.Warn("Failed to load timezone, using UTC", "timezone", cfg.Timezone, "error", err)
+		tz = time.UTC
+	}
+
 	slog.Info("Importing school lunch menus", "school", cfg.SchoolLunchName)
 
 	// Create the school lunch importer
-	importer := schoollunchimporter.NewImporter(store, cfg.SchoolLunchURL, cfg.SchoolLunchName)
+	importer := schoollunchimporter.NewImporter(store, cfg.SchoolLunchURL, cfg.SchoolLunchName, tz)
 
 	// Import the school lunch menus
 	if err := importer.Import(ctx); err != nil {

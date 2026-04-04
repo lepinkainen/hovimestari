@@ -13,7 +13,7 @@ func TestNewImporter(t *testing.T) {
 	url := "https://example.com/lunch"
 	schoolName := "Test School"
 
-	importer := NewImporter(mockStore, url, schoolName)
+	importer := NewImporter(mockStore, url, schoolName, time.UTC)
 
 	if importer.store != mockStore {
 		t.Error("Store not properly set in importer")

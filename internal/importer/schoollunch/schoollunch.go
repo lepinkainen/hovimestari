@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/lepinkainen/hovimestari/internal/store"
 	lunch "github.com/lepinkainen/palmia-lunch/lunch"
@@ -20,14 +21,19 @@ type Importer struct {
 	store      *store.Store
 	url        string
 	schoolName string
+	timezone   *time.Location
 }
 
 // NewImporter creates a new school lunch importer
-func NewImporter(store *store.Store, url, schoolName string) *Importer {
+func NewImporter(store *store.Store, url, schoolName string, tz *time.Location) *Importer {
+	if tz == nil {
+		tz = time.UTC
+	}
 	return &Importer{
 		store:      store,
 		url:        url,
 		schoolName: schoolName,
+		timezone:   tz,
 	}
 }
 
@@ -54,23 +60,28 @@ func (i *Importer) Import(ctx context.Context) error {
 		return nil
 	}
 
+	source := fmt.Sprintf("%s:%s", SourcePrefix, i.schoolName)
+
 	// Process each day in the current week
 	for _, day := range currentWeek.Days {
-		// Format the day's menu as a memory
+		// Normalize to midnight in the configured timezone for consistent DB comparisons
+		d := day.Date.In(i.timezone)
+		relevanceDate := time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, i.timezone)
+
 		content := formatMealContent(&day)
 
-		// Use the day's date as the relevance date
-		relevanceDate := day.Date
-
-		// Add the memory to the database with the school lunch source
-		source := fmt.Sprintf("%s:%s", SourcePrefix, i.schoolName)
-		_, err := i.store.AddMemory(content, &relevanceDate, source, nil)
-		if err != nil {
-			slog.Error("Failed to add school lunch menu to database", "date", day.Date, "error", err)
+		// Remove any existing entry for this source+date before inserting
+		if err := i.store.DeleteMemoriesBySourceAndDate(source, relevanceDate); err != nil {
+			slog.Error("Failed to delete existing school lunch memory", "date", relevanceDate, "error", err)
 			continue
 		}
 
-		slog.Debug("Added school lunch menu", "date", day.Date.Format("2006-01-02"), "school", i.schoolName)
+		if _, err := i.store.AddMemory(content, &relevanceDate, source, nil); err != nil {
+			slog.Error("Failed to add school lunch menu to database", "date", relevanceDate, "error", err)
+			continue
+		}
+
+		slog.Debug("Added school lunch menu", "date", relevanceDate.Format("2006-01-02"), "school", i.schoolName)
 	}
 
 	return nil
