@@ -346,8 +346,12 @@ func GetConfig() (*Config, error) {
 
 	// Determine the final PromptFilePath
 	if cfg.PromptFilePath == "" {
-		// If PromptFilePath is empty, set it to the default
-		cfg.PromptFilePath = filepath.Join(configDir, "prompts.json")
+		// If PromptFilePath is empty, prefer the config file's directory, then XDG default
+		if configFileDir != "" {
+			cfg.PromptFilePath = filepath.Join(configFileDir, "prompts.json")
+		} else {
+			cfg.PromptFilePath = filepath.Join(configDir, "prompts.json")
+		}
 	} else if !filepath.IsAbs(cfg.PromptFilePath) && configFileDir != "" {
 		// If PromptFilePath is relative and config was loaded from a file, resolve it relative to the config file
 		cfg.PromptFilePath = filepath.Join(configFileDir, cfg.PromptFilePath)
