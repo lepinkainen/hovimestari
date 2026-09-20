@@ -2,14 +2,36 @@ package output
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
 func TestCLIOutputter(t *testing.T) {
+	file, err := os.Create(filepath.Join(t.TempDir(), "stdout"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	original := os.Stdout
+	os.Stdout = file
+	t.Cleanup(func() {
+		os.Stdout = original
+		if err := file.Close(); err != nil {
+			t.Error(err)
+		}
+	})
 	outputter := NewCLIOutputter()
-	err := outputter.Send(context.Background(), "Test message")
+	err = outputter.Send(context.Background(), "Test message\nSecond line")
 	if err != nil {
 		t.Errorf("CLIOutputter.Send() returned an error: %v", err)
+	}
+	os.Stdout = original
+	got, err := os.ReadFile(file.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "Test message\nSecond line\n" {
+		t.Errorf("stdout = %q", got)
 	}
 }
 
@@ -65,7 +87,3 @@ func TestEscapeMarkdownV2(t *testing.T) {
 		})
 	}
 }
-
-// Note: We don't test the Discord and Telegram outputters here because they require
-// actual API calls. In a real-world scenario, we would mock the HTTP client to test
-// these outputters without making actual API calls.
