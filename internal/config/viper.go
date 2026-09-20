@@ -229,10 +229,6 @@ func InitViper(configFileFlag string) error {
 	viper.SetDefault("output_language", "Finnish")
 	viper.SetDefault("prompt_file_path", "")
 
-	// Handle inconsistent key names in the config file
-	viper.RegisterAlias("outputLanguage", "output_language")
-	viper.RegisterAlias("promptFilePath", "prompt_file_path")
-
 	// If configFileFlag is provided, use that specific file
 	if configFileFlag != "" {
 		viper.SetConfigFile(configFileFlag)
@@ -275,6 +271,11 @@ func InitViper(configFileFlag string) error {
 			slog.Debug("Config key", "key", key, "value", viper.Get(key))
 		}
 	}
+
+	// Register aliases after reading the file so Viper moves any camelCase
+	// values from the file to their canonical keys instead of hiding them.
+	viper.RegisterAlias("outputLanguage", "output_language")
+	viper.RegisterAlias("promptFilePath", "prompt_file_path")
 
 	return nil
 }
