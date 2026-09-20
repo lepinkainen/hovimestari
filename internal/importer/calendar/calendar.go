@@ -90,9 +90,13 @@ func (i *Importer) Import(ctx context.Context) error {
 		return fmt.Errorf("failed to read calendar data: %w", err)
 	}
 
-	// Parse the iCalendar data directly without filtering
-	// No date filtering - import all events
+	// gocal defaults to a now-1d..now+90d window, which silently drops events
+	// further out - and full_refresh would then delete them from the database.
+	windowStart := time.Now().AddDate(-1, 0, 0)
+	windowEnd := time.Now().AddDate(2, 0, 0)
 	parser := gocal.NewParser(strings.NewReader(string(body)))
+	parser.Start = &windowStart
+	parser.End = &windowEnd
 	// Set strict mode to fail only events with errors, not the entire feed
 	parser.Strict.Mode = gocal.StrictModeFailEvent
 	err = parser.Parse()
@@ -128,7 +132,8 @@ func (i *Importer) Import(ctx context.Context) error {
 			// Truncate long descriptions
 			desc := event.Description
 			if len(desc) > 1000 {
-				desc = desc[:997] + "..."
+				// ToValidUTF8 drops a rune the byte slice cut in half.
+				desc = strings.ToValidUTF8(desc[:997], "") + "..."
 			}
 			description = &desc
 		}
