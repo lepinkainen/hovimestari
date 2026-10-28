@@ -21,7 +21,8 @@
     },
     {
       "name": "Holidays in Finland",
-      "url": "https://calendars.icloud.com/holidays/fi_fi.ics/"
+      "url": "https://calendars.icloud.com/holidays/fi_fi.ics/",
+      "holiday": true
     }
   ],
   "family": [
@@ -38,10 +39,6 @@
       "name": "Pekka",
       "birthday": "2010-01-30"
     }
-  ],
-  "holidays": [
-    { "name": "Vappu", "date": "05-01" },
-    { "name": "Juhannus", "date": "2026-06-20" }
   ],
   "output_format": "cli",
   "outputs": {

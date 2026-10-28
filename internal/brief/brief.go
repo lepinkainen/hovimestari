@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/lepinkainen/hovimestari/internal/config"
+	"github.com/lepinkainen/hovimestari/internal/importer/calendar"
 	weatherimporter "github.com/lepinkainen/hovimestari/internal/importer/weather"
 	"github.com/lepinkainen/hovimestari/internal/llm"
 	"github.com/lepinkainen/hovimestari/internal/store"
@@ -193,9 +194,10 @@ func (g *Generator) assembleUserInfo(
 }
 
 // dayType classifies the given day as "Holiday", "Weekend" or "Weekday".
-// For holidays, the configured holiday name is returned as well.
+// A day is a holiday when a calendar flagged with "holiday": true in the
+// config has an event on it; the event summary is returned as the holiday name.
 func (g *Generator) dayType(now time.Time) (string, string) {
-	if name, ok := findHoliday(g.cfg.Holidays, now); ok {
+	if name, ok := g.findHoliday(now); ok {
 		return "Holiday", name
 	}
 	if now.Weekday() == time.Saturday || now.Weekday() == time.Sunday {
@@ -204,33 +206,38 @@ func (g *Generator) dayType(now time.Time) (string, string) {
 	return "Weekday", ""
 }
 
-// findHoliday returns the name of the first configured holiday matching the
-// given day. Dates are either YYYY-MM-DD for a single year or MM-DD for every
-// year. Entries with an unparseable date are logged and skipped.
-func findHoliday(holidays []config.Holiday, now time.Time) (string, bool) {
-	fullDate := now.Format("2006-01-02")
-	monthDay := now.Format("01-02")
-	for _, holiday := range holidays {
-		date := strings.TrimSpace(holiday.Date)
-		switch {
-		case len(date) == len("2006-01-02"):
-			if _, err := time.Parse("2006-01-02", date); err != nil {
-				slog.Warn("Invalid holiday date, skipping", "name", holiday.Name, "date", holiday.Date)
-				continue
-			}
-			if date == fullDate {
-				return holiday.Name, true
-			}
-		case len(date) == len("01-02"):
-			if _, err := time.Parse("01-02", date); err != nil {
-				slog.Warn("Invalid holiday date, skipping", "name", holiday.Name, "date", holiday.Date)
-				continue
-			}
-			if date == monthDay {
-				return holiday.Name, true
-			}
-		default:
-			slog.Warn("Invalid holiday date, skipping", "name", holiday.Name, "date", holiday.Date)
+// findHoliday looks for an event on the given day from any holiday calendar.
+func (g *Generator) findHoliday(now time.Time) (string, bool) {
+	holidaySources := make(map[string]bool)
+	for _, cal := range g.cfg.Calendars {
+		if cal.Holiday {
+			holidaySources[fmt.Sprintf("%s:%s", calendar.CalendarSourcePrefix, cal.Name)] = true
+		}
+	}
+	if len(holidaySources) == 0 {
+		return "", false
+	}
+
+	// Query a wide UTC window and match the calendar date in Go. The store
+	// compares timestamps textually, so a tight range in the local offset can
+	// miss all-day events that gocal stores at UTC midnight, and vice versa.
+	dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	windowStart := dayStart.UTC().Add(-24 * time.Hour)
+	windowEnd := dayStart.UTC().Add(48 * time.Hour)
+	events, err := g.store.GetRelevantCalendarEvents(windowStart, windowEnd)
+	if err != nil {
+		slog.Warn("Failed to query holiday calendars, assuming no holiday", "error", err)
+		return "", false
+	}
+	today := now.Format("2006-01-02")
+	for _, event := range events {
+		if !holidaySources[event.Source] {
+			continue
+		}
+		// All-day holidays start at midnight, either in UTC or in the local
+		// zone; shifting a UTC midnight into the local zone keeps the date.
+		if event.StartTime.In(now.Location()).Format("2006-01-02") == today {
+			return event.Summary, true
 		}
 	}
 	return "", false

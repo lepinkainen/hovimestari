@@ -170,12 +170,26 @@ func TestGetRelevantMemoryStringsSkipsWeatherMemories(t *testing.T) {
 }
 
 func TestDayType(t *testing.T) {
-	g, _ := newBriefGenerator(t)
-	g.cfg.Holidays = []config.Holiday{
-		{Name: "Vappu", Date: "05-01"},
-		{Name: "Juhannus", Date: "2026-06-20"},
-		{Name: "Broken", Date: "not-a-date"},
+	g, s := newBriefGenerator(t)
+	g.cfg.Calendars = []config.CalendarConfig{
+		{Name: "Family", URL: "https://example.com/family.ics"},
+		{Name: "Holidays in Finland", URL: "https://example.com/fi.ics", Holiday: true},
 	}
+	loc, _ := time.LoadLocation("Europe/Helsinki")
+
+	addEvent := func(uid, summary, calendarName string, start time.Time) {
+		t.Helper()
+		end := start.Add(24 * time.Hour)
+		if _, err := s.AddCalendarEvent(uid, summary, start, &end, nil, nil, "calendar:"+calendarName); err != nil {
+			t.Fatalf("AddCalendarEvent() error = %v", err)
+		}
+	}
+	// Independence Day as an all-day event stored at UTC midnight, as gocal emits DATE values
+	addEvent("fi-independence", "Itsenäisyyspäivä", "Holidays in Finland", time.Date(2026, 12, 6, 0, 0, 0, 0, time.UTC))
+	// Midsummer stored at local midnight, as a DTSTART with TZID would be
+	addEvent("fi-midsummer", "Juhannuspäivä", "Holidays in Finland", time.Date(2026, 6, 20, 0, 0, 0, 0, loc))
+	// A regular calendar event on a weekday must not make it a holiday
+	addEvent("dentist", "Dentist", "Family", time.Date(2026, 4, 1, 9, 0, 0, 0, loc))
 
 	tests := []struct {
 		name        string
@@ -183,12 +197,14 @@ func TestDayType(t *testing.T) {
 		wantType    string
 		wantHoliday string
 	}{
-		{"weekday", time.Date(2026, 4, 1, 7, 0, 0, 0, time.UTC), "Weekday", ""},
-		{"saturday", time.Date(2026, 4, 4, 7, 0, 0, 0, time.UTC), "Weekend", ""},
-		{"sunday", time.Date(2026, 4, 5, 7, 0, 0, 0, time.UTC), "Weekend", ""},
-		{"recurring holiday", time.Date(2027, 5, 1, 7, 0, 0, 0, time.UTC), "Holiday", "Vappu"},
-		{"single-year holiday matches", time.Date(2026, 6, 20, 7, 0, 0, 0, time.UTC), "Holiday", "Juhannus"},
-		{"single-year holiday other year is weekend", time.Date(2027, 6, 20, 7, 0, 0, 0, time.UTC), "Weekend", ""},
+		{"weekday with ordinary event", time.Date(2026, 4, 1, 7, 0, 0, 0, loc), "Weekday", ""},
+		{"saturday", time.Date(2026, 4, 4, 7, 0, 0, 0, loc), "Weekend", ""},
+		{"sunday", time.Date(2026, 4, 5, 7, 0, 0, 0, loc), "Weekend", ""},
+		{"holiday from flagged calendar", time.Date(2026, 12, 6, 7, 0, 0, 0, loc), "Holiday", "Itsenäisyyspäivä"},
+		{"day after holiday", time.Date(2026, 12, 7, 7, 0, 0, 0, loc), "Weekday", ""},
+		{"day before holiday", time.Date(2026, 12, 5, 7, 0, 0, 0, loc), "Weekend", ""},
+		{"holiday stored at local midnight", time.Date(2026, 6, 20, 7, 0, 0, 0, loc), "Holiday", "Juhannuspäivä"},
+		{"day before local-midnight holiday", time.Date(2026, 6, 19, 23, 30, 0, 0, loc), "Weekday", ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -200,9 +216,26 @@ func TestDayType(t *testing.T) {
 	}
 }
 
+func TestDayTypeWithoutHolidayCalendar(t *testing.T) {
+	g, s := newBriefGenerator(t)
+	g.cfg.Calendars = []config.CalendarConfig{{Name: "Holidays in Finland", URL: "https://example.com/fi.ics"}}
+	start := time.Date(2026, 12, 6, 0, 0, 0, 0, time.UTC)
+	if _, err := s.AddCalendarEvent("fi", "Itsenäisyyspäivä", start, nil, nil, nil, "calendar:Holidays in Finland"); err != nil {
+		t.Fatalf("AddCalendarEvent() error = %v", err)
+	}
+	// Calendar not flagged as holiday: 6 December 2026 is a Sunday
+	if gotType, _ := g.dayType(time.Date(2026, 12, 6, 7, 0, 0, 0, time.UTC)); gotType != "Weekend" {
+		t.Fatalf("dayType() = %q, want Weekend", gotType)
+	}
+}
+
 func TestAssembleUserInfoDayType(t *testing.T) {
-	g, _ := newBriefGenerator(t)
-	g.cfg.Holidays = []config.Holiday{{Name: "Vappu", Date: "05-01"}}
+	g, s := newBriefGenerator(t)
+	g.cfg.Calendars = []config.CalendarConfig{{Name: "FI", URL: "https://example.com/fi.ics", Holiday: true}}
+	start := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)
+	if _, err := s.AddCalendarEvent("vappu", "Vappu", start, nil, nil, nil, "calendar:FI"); err != nil {
+		t.Fatalf("AddCalendarEvent() error = %v", err)
+	}
 
 	userInfo := g.assembleUserInfo(time.Date(2026, 5, 1, 7, 0, 0, 0, time.UTC), nil, nil, nil, nil, "")
 	if userInfo["DayType"] != "Holiday" || userInfo["HolidayName"] != "Vappu" {
