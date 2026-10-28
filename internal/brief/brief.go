@@ -3,6 +3,7 @@ package brief
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -53,7 +54,7 @@ func (g *Generator) getRelevantMemoryStrings(startDate, endDate time.Time) ([]st
 				continue
 			}
 		}
-		
+
 		var dateInfo string
 		if memory.RelevanceDate != nil {
 			dateInfo = fmt.Sprintf(" (relevant on %s)", memory.RelevanceDate.Format("2006-01-02"))
@@ -155,6 +156,13 @@ func (g *Generator) assembleUserInfo(
 		"Family":      strings.Join(familyNames, ", "),
 	}
 
+	// Add the day type so the greeting can match a weekday, weekend or holiday
+	dayType, holidayName := g.dayType(now)
+	userInfo["DayType"] = dayType
+	if holidayName != "" {
+		userInfo["HolidayName"] = holidayName
+	}
+
 	// Add ongoing events if any
 	if len(ongoingEvents) > 0 {
 		userInfo["OngoingEvents"] = strings.Join(ongoingEvents, "\n")
@@ -182,6 +190,50 @@ func (g *Generator) assembleUserInfo(
 	}
 
 	return userInfo
+}
+
+// dayType classifies the given day as "Holiday", "Weekend" or "Weekday".
+// For holidays, the configured holiday name is returned as well.
+func (g *Generator) dayType(now time.Time) (string, string) {
+	if name, ok := findHoliday(g.cfg.Holidays, now); ok {
+		return "Holiday", name
+	}
+	if now.Weekday() == time.Saturday || now.Weekday() == time.Sunday {
+		return "Weekend", ""
+	}
+	return "Weekday", ""
+}
+
+// findHoliday returns the name of the first configured holiday matching the
+// given day. Dates are either YYYY-MM-DD for a single year or MM-DD for every
+// year. Entries with an unparseable date are logged and skipped.
+func findHoliday(holidays []config.Holiday, now time.Time) (string, bool) {
+	fullDate := now.Format("2006-01-02")
+	monthDay := now.Format("01-02")
+	for _, holiday := range holidays {
+		date := strings.TrimSpace(holiday.Date)
+		switch {
+		case len(date) == len("2006-01-02"):
+			if _, err := time.Parse("2006-01-02", date); err != nil {
+				slog.Warn("Invalid holiday date, skipping", "name", holiday.Name, "date", holiday.Date)
+				continue
+			}
+			if date == fullDate {
+				return holiday.Name, true
+			}
+		case len(date) == len("01-02"):
+			if _, err := time.Parse("01-02", date); err != nil {
+				slog.Warn("Invalid holiday date, skipping", "name", holiday.Name, "date", holiday.Date)
+				continue
+			}
+			if date == monthDay {
+				return holiday.Name, true
+			}
+		default:
+			slog.Warn("Invalid holiday date, skipping", "name", holiday.Name, "date", holiday.Date)
+		}
+	}
+	return "", false
 }
 
 // formatCalendarEventString formats a calendar event as a string for LLM context

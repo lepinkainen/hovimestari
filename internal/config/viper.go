@@ -28,6 +28,12 @@ type FamilyMember struct {
 	TelegramID string `json:"telegram_id,omitempty" mapstructure:"telegram_id"`
 }
 
+// Holiday is a named date that the brief should treat as a holiday
+type Holiday struct {
+	Name string `json:"name" mapstructure:"name"`
+	Date string `json:"date" mapstructure:"date"` // Format: YYYY-MM-DD for a single year, or MM-DD for every year
+}
+
 // TelegramConfig holds configuration for a Telegram bot
 type TelegramConfig struct {
 	BotToken string `json:"bot_token" mapstructure:"bot_token"`
@@ -74,6 +80,9 @@ type Config struct {
 
 	// Family configuration
 	Family []FamilyMember `json:"family" mapstructure:"family"`
+
+	// Holidays that should change the greeting of the brief
+	Holidays []Holiday `json:"holidays,omitempty" mapstructure:"holidays"`
 
 	// Output configuration
 	OutputFormat string       `json:"output_format" mapstructure:"output_format"` // "cli", "telegram", etc. (legacy, use Outputs instead)

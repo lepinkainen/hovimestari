@@ -1,6 +1,9 @@
 package llm
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestCleanMarkdownWrapper(t *testing.T) {
 	tests := []struct {
@@ -62,5 +65,26 @@ func TestCleanMarkdownWrapper(t *testing.T) {
 				t.Errorf("cleanMarkdownWrapper(%q) = %q, expected %q", tt.input, result, tt.expected)
 			}
 		})
+	}
+}
+
+func TestBuildBriefPromptIncludesDayType(t *testing.T) {
+	c := &Client{prompts: map[string][]string{"dailyBrief": {"Context:", PromptContextPlaceholder}}}
+
+	prompt := c.BuildBriefPrompt(nil, map[string]string{
+		"Date":        "Friday, 1 May 2026",
+		"DayType":     "Holiday",
+		"HolidayName": "Vappu",
+	}, "Finnish")
+
+	for _, want := range []string{"- Day Type: Holiday\n", "- Holiday: Vappu\n"} {
+		if !strings.Contains(prompt, want) {
+			t.Fatalf("prompt missing %q:\n%s", want, prompt)
+		}
+	}
+
+	prompt = c.BuildBriefPrompt(nil, map[string]string{"DayType": "Weekday"}, "Finnish")
+	if strings.Contains(prompt, "- Holiday:") {
+		t.Fatalf("prompt should not mention a holiday on a weekday:\n%s", prompt)
 	}
 }

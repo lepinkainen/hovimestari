@@ -168,3 +168,52 @@ func TestGetRelevantMemoryStringsSkipsWeatherMemories(t *testing.T) {
 		t.Fatalf("first formatted memory = %q", formatted[0])
 	}
 }
+
+func TestDayType(t *testing.T) {
+	g, _ := newBriefGenerator(t)
+	g.cfg.Holidays = []config.Holiday{
+		{Name: "Vappu", Date: "05-01"},
+		{Name: "Juhannus", Date: "2026-06-20"},
+		{Name: "Broken", Date: "not-a-date"},
+	}
+
+	tests := []struct {
+		name        string
+		now         time.Time
+		wantType    string
+		wantHoliday string
+	}{
+		{"weekday", time.Date(2026, 4, 1, 7, 0, 0, 0, time.UTC), "Weekday", ""},
+		{"saturday", time.Date(2026, 4, 4, 7, 0, 0, 0, time.UTC), "Weekend", ""},
+		{"sunday", time.Date(2026, 4, 5, 7, 0, 0, 0, time.UTC), "Weekend", ""},
+		{"recurring holiday", time.Date(2027, 5, 1, 7, 0, 0, 0, time.UTC), "Holiday", "Vappu"},
+		{"single-year holiday matches", time.Date(2026, 6, 20, 7, 0, 0, 0, time.UTC), "Holiday", "Juhannus"},
+		{"single-year holiday other year is weekend", time.Date(2027, 6, 20, 7, 0, 0, 0, time.UTC), "Weekend", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotType, gotHoliday := g.dayType(tt.now)
+			if gotType != tt.wantType || gotHoliday != tt.wantHoliday {
+				t.Fatalf("dayType() = (%q, %q), want (%q, %q)", gotType, gotHoliday, tt.wantType, tt.wantHoliday)
+			}
+		})
+	}
+}
+
+func TestAssembleUserInfoDayType(t *testing.T) {
+	g, _ := newBriefGenerator(t)
+	g.cfg.Holidays = []config.Holiday{{Name: "Vappu", Date: "05-01"}}
+
+	userInfo := g.assembleUserInfo(time.Date(2026, 5, 1, 7, 0, 0, 0, time.UTC), nil, nil, nil, nil, "")
+	if userInfo["DayType"] != "Holiday" || userInfo["HolidayName"] != "Vappu" {
+		t.Fatalf("DayType = %q, HolidayName = %q", userInfo["DayType"], userInfo["HolidayName"])
+	}
+
+	userInfo = g.assembleUserInfo(time.Date(2026, 5, 4, 7, 0, 0, 0, time.UTC), nil, nil, nil, nil, "")
+	if userInfo["DayType"] != "Weekday" {
+		t.Fatalf("DayType = %q, want Weekday", userInfo["DayType"])
+	}
+	if _, ok := userInfo["HolidayName"]; ok {
+		t.Fatalf("HolidayName should be absent on a non-holiday")
+	}
+}

@@ -112,6 +112,8 @@ func (c *Client) BuildBriefPrompt(memories []string, userInfo map[string]string,
 		date := userInfo["Date"]
 		currentTime := userInfo["CurrentTime"]
 		timezone := userInfo["Timezone"]
+		dayType := userInfo["DayType"]
+		holidayName := userInfo["HolidayName"]
 		location := userInfo["Location"]
 		family := userInfo["Family"]
 		weather := userInfo["Weather"]
@@ -130,6 +132,14 @@ func (c *Client) BuildBriefPrompt(memories []string, userInfo map[string]string,
 
 		if timezone != "" {
 			fmt.Fprintf(&contextBuilder, "- Timezone: %s\n", timezone)
+		}
+
+		if dayType != "" {
+			fmt.Fprintf(&contextBuilder, "- Day Type: %s\n", dayType)
+		}
+
+		if holidayName != "" {
+			fmt.Fprintf(&contextBuilder, "- Holiday: %s\n", holidayName)
 		}
 
 		if location != "" {
