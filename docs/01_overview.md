@@ -6,7 +6,7 @@ Hovimestari ("Butler" in Finnish) is a personal AI butler assistant that generat
 
 - **Language:** Go (Golang)
 - **Database:** SQLite (using `modernc.org/sqlite`)
-- **LLM:** Google Gemini (using `github.com/google/generative-ai-go`)
+- **LLM:** Google Gemini (using `google.golang.org/genai`)
 - **Calendar Parsing:** iCalendar (using `github.com/apognu/gocal`)
 - **Weather API:** MET Norway Locationforecast API
 - **CLI Framework:** Cobra (`github.com/spf13/cobra`)

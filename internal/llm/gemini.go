@@ -3,11 +3,9 @@ package llm
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 
-	"github.com/google/generative-ai-go/genai"
-	"google.golang.org/api/option"
+	"google.golang.org/genai"
 )
 
 const (
@@ -40,31 +38,40 @@ func cleanMarkdownWrapper(content string) string {
 // Client is a client for the Google Gemini API
 type Client struct {
 	client  *genai.Client
-	model   *genai.GenerativeModel
+	model   string
 	prompts map[string][]string
+}
+
+// newGenaiClient creates a Gemini API client authenticated with the given API key
+func newGenaiClient(ctx context.Context, apiKey string) (*genai.Client, error) {
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey:  apiKey,
+		Backend: genai.BackendGeminiAPI,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
+	}
+	return client, nil
 }
 
 // NewClient creates a new Gemini client with the given API key, model name, and prompts
 func NewClient(apiKey string, modelName string, prompts map[string][]string) (*Client, error) {
-	ctx := context.Background()
-	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
+	client, err := newGenaiClient(context.Background(), apiKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
+		return nil, err
 	}
-
-	// Use the specified model
-	model := client.GenerativeModel(modelName)
 
 	return &Client{
 		client:  client,
-		model:   model,
+		model:   modelName,
 		prompts: prompts,
 	}, nil
 }
 
-// Close closes the Gemini client
+// Close releases resources held by the client. The underlying SDK client holds
+// no persistent connections, so this is a no-op kept for API compatibility.
 func (c *Client) Close() error {
-	return c.client.Close()
+	return nil
 }
 
 // Generate generates content using the Gemini API with the specified prompt content and output language
@@ -73,23 +80,23 @@ func (c *Client) Generate(ctx context.Context, promptKey string, outputLanguage 
 	// fmt.Println("Prompt for Gemini:", promptContent)
 
 	// Generate the response
-	resp, err := c.model.GenerateContent(ctx, genai.Text(promptContent))
+	resp, err := c.client.Models.GenerateContent(ctx, c.model, genai.Text(promptContent), nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate content: %w", err)
 	}
 
-	if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
+	if len(resp.Candidates) == 0 || resp.Candidates[0].Content == nil || len(resp.Candidates[0].Content.Parts) == 0 {
 		return "", fmt.Errorf("no content generated")
 	}
 
 	// Extract the text from the response
-	text, ok := resp.Candidates[0].Content.Parts[0].(genai.Text)
-	if !ok {
+	text := resp.Text()
+	if text == "" {
 		return "", fmt.Errorf("unexpected response format")
 	}
 
 	// Clean any markdown wrapper from the response
-	cleanedText := cleanMarkdownWrapper(string(text))
+	cleanedText := cleanMarkdownWrapper(text)
 
 	return cleanedText, nil
 }
@@ -208,26 +215,16 @@ func (c *Client) GenerateResponse(ctx context.Context, query string, memories []
 // ListModels lists the available Gemini models
 func ListModels(ctx context.Context, apiKey string) ([]string, error) {
 	// Create a temporary client
-	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
+	client, err := newGenaiClient(ctx, apiKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
+		return nil, err
 	}
-	defer func() {
-		if err := client.Close(); err != nil {
-			slog.Error("Failed to close Gemini client", "error", err)
-		}
-	}()
 
-	// List the models
-	iter := client.ListModels(ctx)
-
-	// Extract model names
+	// List the models, collecting names across all pages
 	var modelNames []string
-	for {
-		model, err := iter.Next()
+	for model, err := range client.Models.All(ctx) {
 		if err != nil {
-			// If we've reached the end of the iterator, break out of the loop
-			break
+			return nil, fmt.Errorf("failed to list models: %w", err)
 		}
 		modelNames = append(modelNames, model.Name)
 	}
