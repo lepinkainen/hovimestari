@@ -1,6 +1,6 @@
 module github.com/lepinkainen/hovimestari
 
-go 1.26.1
+go 1.27
 
 require (
 	github.com/alecthomas/kong v1.16.1
