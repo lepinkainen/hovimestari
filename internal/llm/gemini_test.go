@@ -88,3 +88,17 @@ func TestBuildBriefPromptIncludesDayType(t *testing.T) {
 		t.Fatalf("prompt should not mention a holiday on a weekday:\n%s", prompt)
 	}
 }
+
+func TestBuildBriefPromptIncludesHourlyForecast(t *testing.T) {
+	c := &Client{prompts: map[string][]string{"dailyBrief": {PromptContextPlaceholder}}}
+
+	prompt := c.BuildBriefPrompt(nil, map[string]string{
+		"Weather":             "Sunny, 10-15°C",
+		"HourlyForecastToday": "08:00 clear 10°C\n12:00 clear 15°C",
+	}, "Finnish")
+
+	want := "- HourlyForecastToday:\n  * 08:00 clear 10°C\n  * 12:00 clear 15°C\n"
+	if !strings.Contains(prompt, want) {
+		t.Fatalf("prompt missing hourly forecast block:\n%s", prompt)
+	}
+}

@@ -117,6 +117,7 @@ func (c *Client) BuildBriefPrompt(memories []string, userInfo map[string]string,
 		location := userInfo["Location"]
 		family := userInfo["Family"]
 		weather := userInfo["Weather"]
+		hourlyForecast := userInfo["HourlyForecastToday"]
 		futureWeather := userInfo["FutureWeather"]
 		weatherChanges := userInfo["WeatherChanges"]
 		birthdays := userInfo["Birthdays"]
@@ -152,6 +153,13 @@ func (c *Client) BuildBriefPrompt(memories []string, userInfo map[string]string,
 
 		if weather != "" {
 			fmt.Fprintf(&contextBuilder, "- Today's Weather: %s\n", weather)
+		}
+
+		if hourlyForecast != "" {
+			contextBuilder.WriteString("- HourlyForecastToday:\n")
+			for line := range strings.SplitSeq(hourlyForecast, "\n") {
+				fmt.Fprintf(&contextBuilder, "  * %s\n", line)
+			}
 		}
 
 		if futureWeather != "" {
